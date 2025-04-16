@@ -79,7 +79,7 @@ const userQueries = {
     // Get user by ID
     getUserById: async (userId) => {
         try {
-            const result = await pool.query('SELECT id, name, email, isadmin FROM users WHERE id = $1', [userId]);
+            const result = await pool.query('SELECT id, name, email, isadmin, created_at FROM users WHERE id = $1', [userId]);
             return result.rows.length > 0 ? result.rows[0] : null;
         } catch (err) {
             console.error('Error finding user by ID:', err);
