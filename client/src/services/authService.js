@@ -32,9 +32,14 @@ export const getUserFromToken = () => {
   }
 };
 
-export const register = async (name, email, password) => {
+export const register = async (name, email, password, otp) => {
   try {
-    const response = await axios.post(`${API_URL}/signup`, { name, email, password });
+    const response = await axios.post(`${API_URL}/signup`, { 
+      name, 
+      email, 
+      password, 
+      ...(otp ? { otp } : {}) // Include OTP if provided
+    });
     if (response.data.token) {
       setToken(response.data.token);
     }
@@ -85,6 +90,41 @@ export const getAllUsers = async () => {
     return response.data;
   } catch (error) {
     throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+export const sendVerificationOTP = async (email, purpose = 'verification') => {
+  try {
+    const response = await axios.post(`${API_URL}/send-verification-otp`, { 
+      email, 
+      purpose 
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+export const verifyOTP = async (email, otp, purpose = 'verification') => {
+  try {
+    const response = await axios.post(`${API_URL}/verify-otp`, {
+      email,
+      otp,
+      purpose
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
+// Update the verifiedRegister function to pass OTP directly to register
+export const verifiedRegister = async (name, email, password, otp) => {
+  try {
+    // Skip separate verification and pass OTP directly to register
+    return await register(name, email, password, otp);
+  } catch (error) {
+    throw error;
   }
 };
 

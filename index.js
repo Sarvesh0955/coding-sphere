@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const db = require('./database');
+const emailService = require('./emailService');
 
 dotenv.config();
 
@@ -52,9 +53,21 @@ app.get('/', (req, res) => {
     res.send('Hello, World!');
 });
 
+// Add a debugging endpoint to check OTP status
+app.get('/api/check-otp/:email', (req, res) => {
+    try {
+        const email = req.params.email;
+        const info = emailService.getStoredOTPInfo(email);
+        res.status(200).json(info);
+    } catch (err) {
+        console.error('Error checking OTP:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 app.post('/api/signup', async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, otp } = req.body;
         
         if (!name || !email || !password) {
             return res.status(400).json({ message: 'Name, email and password are required' });
@@ -64,10 +77,25 @@ app.post('/api/signup', async (req, res) => {
         if (existingUser) {
             return res.status(409).json({ message: 'User with this email already exists' });
         }
+
+        // Check if OTP is provided and verify it
+        if (otp) {
+            console.log(`Verifying OTP for signup: ${email}, ${otp}`);
+            const otpResult = emailService.verifyOTP(email, otp, 'signup');
+            if (!otpResult.valid) {
+                return res.status(400).json({ message: otpResult.message });
+            }
+            console.log(`OTP verification successful for ${email}`);
+        } else {
+            console.log(`No OTP provided for signup: ${email}`);
+            // Make OTP required
+            return res.status(400).json({ message: 'Verification code is required' });
+        }
         
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         
+        console.log(`Creating user: ${name}, ${email}`);
         const user = await db.userQueries.createUser(name, email, hashedPassword, false);
         
         const token = jwt.sign(
@@ -88,7 +116,7 @@ app.post('/api/signup', async (req, res) => {
         });
     } catch (err) {
         console.error('Error in signup:', err);
-        res.status(500).json({ message: 'Server error during registration' });
+        res.status(500).json({ message: 'Server error during registration', error: err.message });
     }
 });
 
@@ -153,6 +181,59 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
         res.status(200).json({ users });
     } catch (err) {
         console.error('Error fetching users:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Send OTP for email verification
+app.post('/api/send-verification-otp', async (req, res) => {
+    try {
+        const { email, purpose = 'verification' } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+        
+        const result = await emailService.sendOTP(email, purpose);
+        
+        if (!result.success) {
+            return res.status(500).json({ message: 'Failed to send OTP', error: result.error });
+        }
+        
+        res.status(200).json({ message: 'OTP sent successfully' });
+    } catch (err) {
+        console.error('Error sending OTP:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Verify OTP
+app.post('/api/verify-otp', async (req, res) => {
+    try {
+        const { email, otp, purpose = 'verification' } = req.body;
+        
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and OTP are required' });
+        }
+        
+        const result = emailService.verifyOTP(email, otp, purpose);
+        
+        if (!result.valid) {
+            return res.status(400).json({ message: result.message });
+        }
+        
+        // Handle different verification purposes
+        if (purpose === 'signup') {
+            // Set user as verified in the database
+            const updatedUser = await db.userQueries.verifyUserEmail(email);
+            if (!updatedUser) {
+                return res.status(400).json({ message: 'User not found' });
+            }
+        }
+        
+        res.status(200).json({ message: 'OTP verified successfully' });
+    } catch (err) {
+        console.error('Error verifying OTP:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });

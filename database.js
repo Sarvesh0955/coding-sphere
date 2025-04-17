@@ -26,8 +26,22 @@ const initDatabase = async () => {
                 email VARCHAR(100) UNIQUE NOT NULL,
                 password VARCHAR(100) NOT NULL,
                 isadmin BOOLEAN DEFAULT false,
+                email_verified BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        `);
+        
+        // Check if email_verified column exists, add it if it doesn't
+        await client.query(`
+            DO $$ 
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='email_verified'
+                ) THEN
+                    ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;
+                END IF;
+            END $$;
         `);
         
         console.log('Database initialized successfully');
@@ -94,6 +108,20 @@ const userQueries = {
             return result.rows;
         } catch (err) {
             console.error('Error getting all users:', err);
+            throw err;
+        }
+    },
+    
+    // Mark user's email as verified
+    verifyUserEmail: async (email) => {
+        try {
+            const result = await pool.query(
+                'UPDATE users SET email_verified = true WHERE email = $1 RETURNING id, name, email, isadmin, email_verified',
+                [email]
+            );
+            return result.rows.length > 0 ? result.rows[0] : null;
+        } catch (err) {
+            console.error('Error verifying user email:', err);
             throw err;
         }
     }
