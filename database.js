@@ -1,5 +1,7 @@
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 
 // Load environment variables
 dotenv.config();
@@ -13,36 +15,17 @@ const pool = new Pool({
     port: process.env.DB_PORT || 5432,
 });
 
-// Initialize database and create users table
+// Initialize database by running schema.sql
 const initDatabase = async () => {
     try {
         const client = await pool.connect();
         
-        // Create users table if it doesn't exist
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                email VARCHAR(100) UNIQUE NOT NULL,
-                password VARCHAR(100) NOT NULL,
-                isadmin BOOLEAN DEFAULT false,
-                email_verified BOOLEAN DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        // Read schema file
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
         
-        // Check if email_verified column exists, add it if it doesn't
-        await client.query(`
-            DO $$ 
-            BEGIN
-                IF NOT EXISTS (
-                    SELECT FROM information_schema.columns 
-                    WHERE table_name='users' AND column_name='email_verified'
-                ) THEN
-                    ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT false;
-                END IF;
-            END $$;
-        `);
+        // Execute schema SQL
+        await client.query(schemaSql);
         
         console.log('Database initialized successfully');
         client.release();
@@ -63,65 +46,74 @@ const testConnection = () => {
     });
 };
 
-// User queries
-const userQueries = {
-    // Check if a user exists by email
-    getUserByEmail: async (email) => {
+// Profile queries
+const profileQueries = {
+    // Check if a profile exists by email
+    getProfileByEmail: async (email) => {
         try {
-            const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+            const result = await pool.query('SELECT * FROM PROFILES WHERE email = $1', [email]);
             return result.rows.length > 0 ? result.rows[0] : null;
         } catch (err) {
-            console.error('Error finding user by email:', err);
+            console.error('Error finding profile by email:', err);
             throw err;
         }
     },
 
-    // Create a new user
-    createUser: async (name, email, hashedPassword, isAdmin = false) => {
+    // Create a new profile
+    createProfile: async (username, passwordHash, email, firstName = null, lastName = null, profilePic = null, isAdmin = false) => {
         try {
             const result = await pool.query(
-                'INSERT INTO users (name, email, password, isadmin) VALUES ($1, $2, $3, $4) RETURNING id, name, email, isadmin',
-                [name, email, hashedPassword, isAdmin]
+                'INSERT INTO PROFILES (username, password_hash, email, first_name, last_name, profile_pic, is_admin) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING username, email, first_name, last_name, is_admin',
+                [username, passwordHash, email, firstName, lastName, profilePic, isAdmin]
             );
             return result.rows[0];
         } catch (err) {
-            console.error('Error creating user:', err);
+            console.error('Error creating profile:', err);
             throw err;
         }
     },
 
-    // Get user by ID
-    getUserById: async (userId) => {
+    // Get profile by username - Include password_hash for login authentication
+    getProfileByUsername: async (username, includePassword = false) => {
         try {
-            const result = await pool.query('SELECT id, name, email, isadmin, created_at FROM users WHERE id = $1', [userId]);
+            let query;
+            if (includePassword) {
+                // Include password_hash for authentication
+                query = 'SELECT username, email, password_hash, first_name, last_name, profile_pic, is_admin, created_at FROM PROFILES WHERE username = $1';
+            } else {
+                // Exclude password_hash for general profile access
+                query = 'SELECT username, email, first_name, last_name, profile_pic, is_admin, created_at FROM PROFILES WHERE username = $1';
+            }
+            
+            const result = await pool.query(query, [username]);
             return result.rows.length > 0 ? result.rows[0] : null;
         } catch (err) {
-            console.error('Error finding user by ID:', err);
+            console.error('Error finding profile by username:', err);
             throw err;
         }
     },
 
-    // Get all users (for admin)
-    getAllUsers: async () => {
+    // Get all profiles (for admin)
+    getAllProfiles: async () => {
         try {
-            const result = await pool.query('SELECT id, name, email, isadmin, created_at FROM users');
+            const result = await pool.query('SELECT username, email, first_name, last_name, is_admin, created_at FROM PROFILES');
             return result.rows;
         } catch (err) {
-            console.error('Error getting all users:', err);
+            console.error('Error getting all profiles:', err);
             throw err;
         }
     },
     
-    // Mark user's email as verified
-    verifyUserEmail: async (email) => {
+    // Mark profile's email as verified
+    verifyProfileEmail: async (email) => {
         try {
             const result = await pool.query(
-                'UPDATE users SET email_verified = true WHERE email = $1 RETURNING id, name, email, isadmin, email_verified',
+                'UPDATE PROFILES SET email_verified = true WHERE email = $1 RETURNING username, email, first_name, last_name, is_admin, email_verified',
                 [email]
             );
             return result.rows.length > 0 ? result.rows[0] : null;
         } catch (err) {
-            console.error('Error verifying user email:', err);
+            console.error('Error verifying profile email:', err);
             throw err;
         }
     }
@@ -131,5 +123,5 @@ module.exports = {
     pool,
     initDatabase,
     testConnection,
-    userQueries
+    profileQueries
 };

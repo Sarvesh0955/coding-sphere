@@ -4,7 +4,7 @@ import { login } from '../services/authService';
 
 const Login = ({ setUser }) => {
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
   const [error, setError] = useState('');
@@ -24,8 +24,8 @@ const Login = ({ setUser }) => {
     setLoading(true);
 
     try {
-      const data = await login(formData.email, formData.password);
-      setUser(data.user);
+      const data = await login(formData.username, formData.password);
+      setUser(data.profile);
       navigate('/profile');
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
@@ -45,13 +45,13 @@ const Login = ({ setUser }) => {
             {error && <div className="alert alert-danger">{error}</div>}
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label htmlFor="email" className="form-label">Email</label>
+                <label htmlFor="username" className="form-label">Username</label>
                 <input 
-                  type="email" 
+                  type="text" 
                   className="form-control" 
-                  id="email" 
-                  name="email"
-                  value={formData.email}
+                  id="username" 
+                  name="username"
+                  value={formData.username}
                   onChange={handleChange}
                   required
                 />

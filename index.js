@@ -21,9 +21,14 @@ app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
-db.initDatabase();
+// Initialize database with schema.sql
+const setupDatabase = async () => {
+  await db.initDatabase();
+  db.testConnection();
+};
 
-db.testConnection();
+// Run database setup
+setupDatabase();
 
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -43,7 +48,7 @@ const authenticateToken = (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-    if (!req.user.isadmin) {
+    if (!req.user.is_admin) {
         return res.status(403).json({ message: 'Admin privileges required' });
     }
     next();
@@ -67,15 +72,21 @@ app.get('/api/check-otp/:email', (req, res) => {
 
 app.post('/api/signup', async (req, res) => {
     try {
-        const { name, email, password, otp } = req.body;
+        const { username, email, password, firstName, lastName, otp } = req.body;
         
-        if (!name || !email || !password) {
-            return res.status(400).json({ message: 'Name, email and password are required' });
+        if (!username || !email || !password) {
+            return res.status(400).json({ message: 'Username, email and password are required' });
         }
         
-        const existingUser = await db.userQueries.getUserByEmail(email);
-        if (existingUser) {
+        const existingProfile = await db.profileQueries.getProfileByEmail(email);
+        if (existingProfile) {
             return res.status(409).json({ message: 'User with this email already exists' });
+        }
+
+        // Check if username is already taken
+        const existingUsername = await db.profileQueries.getProfileByUsername(username);
+        if (existingUsername) {
+            return res.status(409).json({ message: 'Username is already taken' });
         }
 
         // Check if OTP is provided and verify it
@@ -95,22 +106,35 @@ app.post('/api/signup', async (req, res) => {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         
-        console.log(`Creating user: ${name}, ${email}`);
-        const user = await db.userQueries.createUser(name, email, hashedPassword, false);
+        console.log(`Creating profile: ${username}, ${email}`);
+        const profile = await db.profileQueries.createProfile(
+            username, 
+            hashedPassword, 
+            email, 
+            firstName || null, 
+            lastName || null, 
+            null, // profile_pic
+            false // isAdmin
+        );
         
         const token = jwt.sign(
-            { id: user.id, email: user.email, isadmin: user.isadmin },
+            { 
+                username: profile.username, 
+                email: profile.email, 
+                is_admin: profile.is_admin 
+            },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
         
         res.status(201).json({
             message: 'User registered successfully',
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                isadmin: user.isadmin
+            profile: {
+                username: profile.username,
+                email: profile.email,
+                firstName: profile.first_name,
+                lastName: profile.last_name,
+                is_admin: profile.is_admin
             },
             token
         });
@@ -122,35 +146,41 @@ app.post('/api/signup', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { username, password } = req.body;
         
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Email and password are required' });
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Username and password are required' });
         }
         
-        const user = await db.userQueries.getUserByEmail(email);
-        if (!user) {
+        // Include password_hash for authentication
+        const profile = await db.profileQueries.getProfileByUsername(username, true);
+        if (!profile) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         
-        const isPasswordValid = await bcrypt.compare(password, user.password);
+        const isPasswordValid = await bcrypt.compare(password, profile.password_hash);
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         
         const token = jwt.sign(
-            { id: user.id, email: user.email, isadmin: user.isadmin },
+            { 
+                username: profile.username, 
+                email: profile.email, 
+                is_admin: profile.is_admin 
+            },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
         
         res.status(200).json({
             message: 'Login successful',
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                isadmin: user.isadmin
+            profile: {
+                username: profile.username,
+                email: profile.email,
+                firstName: profile.first_name,
+                lastName: profile.last_name,
+                is_admin: profile.is_admin
             },
             token
         });
@@ -162,25 +192,33 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/profile', authenticateToken, async (req, res) => {
     try {
-        const user = await db.userQueries.getUserById(req.user.id);
+        const profile = await db.profileQueries.getProfileByUsername(req.user.username);
         
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        if (!profile) {
+            return res.status(404).json({ message: 'Profile not found' });
         }
         
-        res.status(200).json(user);
+        res.status(200).json({
+            username: profile.username,
+            email: profile.email,
+            firstName: profile.first_name,
+            lastName: profile.last_name,
+            profilePic: profile.profile_pic,
+            is_admin: profile.is_admin,
+            created_at: profile.created_at
+        });
     } catch (err) {
         console.error('Error fetching profile:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/profiles', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const users = await db.userQueries.getAllUsers();
-        res.status(200).json({ users });
+        const profiles = await db.profileQueries.getAllProfiles();
+        res.status(200).json({ profiles });
     } catch (err) {
-        console.error('Error fetching users:', err);
+        console.error('Error fetching profiles:', err);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -224,9 +262,9 @@ app.post('/api/verify-otp', async (req, res) => {
         
         // Handle different verification purposes
         if (purpose === 'signup') {
-            // Set user as verified in the database
-            const updatedUser = await db.userQueries.verifyUserEmail(email);
-            if (!updatedUser) {
+            // Set profile as verified in the database
+            const updatedProfile = await db.profileQueries.verifyProfileEmail(email);
+            if (!updatedProfile) {
                 return res.status(400).json({ message: 'User not found' });
             }
         }

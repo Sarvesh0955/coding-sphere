@@ -32,12 +32,14 @@ export const getUserFromToken = () => {
   }
 };
 
-export const register = async (name, email, password, otp) => {
+export const register = async (username, email, password, firstName, lastName, otp) => {
   try {
     const response = await axios.post(`${API_URL}/signup`, { 
-      name, 
+      username, 
       email, 
-      password, 
+      password,
+      firstName,
+      lastName,
       ...(otp ? { otp } : {}) // Include OTP if provided
     });
     if (response.data.token) {
@@ -49,9 +51,9 @@ export const register = async (name, email, password, otp) => {
   }
 };
 
-export const login = async (email, password) => {
+export const login = async (username, password) => {
   try {
-    const response = await axios.post(`${API_URL}/login`, { email, password });
+    const response = await axios.post(`${API_URL}/login`, { username, password });
     if (response.data.token) {
       setToken(response.data.token);
     }
@@ -93,6 +95,20 @@ export const getAllUsers = async () => {
   }
 };
 
+export const getAllProfiles = async () => {
+  try {
+    const token = getToken();
+    if (!token) throw new Error('No token found');
+    
+    const response = await axios.get(`${API_URL}/admin/profiles`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
 export const sendVerificationOTP = async (email, purpose = 'verification') => {
   try {
     const response = await axios.post(`${API_URL}/send-verification-otp`, { 
@@ -119,10 +135,10 @@ export const verifyOTP = async (email, otp, purpose = 'verification') => {
 };
 
 // Update the verifiedRegister function to pass OTP directly to register
-export const verifiedRegister = async (name, email, password, otp) => {
+export const verifiedRegister = async (username, email, password, firstName, lastName, otp) => {
   try {
     // Skip separate verification and pass OTP directly to register
-    return await register(name, email, password, otp);
+    return await register(username, email, password, firstName, lastName, otp);
   } catch (error) {
     throw error;
   }

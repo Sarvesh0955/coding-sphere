@@ -4,8 +4,10 @@ import { register, sendVerificationOTP, verifyOTP, verifiedRegister } from '../s
 
 const Signup = ({ setUser }) => {
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
+    firstName: '',
+    lastName: '',
     password: '',
     confirmPassword: '',
     otp: ''
@@ -55,27 +57,17 @@ const Signup = ({ setUser }) => {
     try {
       // Use the verifiedRegister function with all parameters including OTP
       const data = await verifiedRegister(
-        formData.name, 
-        formData.email, 
+        formData.username,
+        formData.email,
         formData.password,
+        formData.firstName,
+        formData.lastName,
         formData.otp
       );
-      setUser(data.user);
+      setUser(data.profile);
       navigate('/profile');
     } catch (err) {
       setError(err.message || 'Invalid verification code or registration failed. Please try again.');
-      setVerifying(false);
-    }
-  };
-
-  // We won't be using this function directly anymore
-  const registerUser = async () => {
-    try {
-      const data = await register(formData.name, formData.email, formData.password, formData.otp);
-      setUser(data.user);
-      navigate('/profile');
-    } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
       setVerifying(false);
     }
   };
@@ -86,6 +78,12 @@ const Signup = ({ setUser }) => {
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
+      return;
+    }
+
+    // Validate username
+    if (!formData.username) {
+      setError('Username is required');
       return;
     }
 
@@ -109,17 +107,19 @@ const Signup = ({ setUser }) => {
             {error && <div className="alert alert-danger">{error}</div>}
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label htmlFor="name" className="form-label">Full Name</label>
+                <label htmlFor="username" className="form-label">Username</label>
                 <input 
                   type="text" 
                   className="form-control" 
-                  id="name" 
-                  name="name"
-                  value={formData.name}
+                  id="username" 
+                  name="username"
+                  value={formData.username}
                   onChange={handleChange}
                   required
                 />
+                <small className="text-muted">This will be your unique identifier for login</small>
               </div>
+
               <div className="mb-3">
                 <label htmlFor="email" className="form-label">Email</label>
                 <input 
@@ -132,6 +132,32 @@ const Signup = ({ setUser }) => {
                   required
                 />
               </div>
+
+              <div className="row mb-3">
+                <div className="col">
+                  <label htmlFor="firstName" className="form-label">First Name</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    id="firstName" 
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="col">
+                  <label htmlFor="lastName" className="form-label">Last Name</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    id="lastName" 
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
+
               <div className="mb-3">
                 <label htmlFor="password" className="form-label">Password</label>
                 <input 

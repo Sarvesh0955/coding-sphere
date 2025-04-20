@@ -51,13 +51,23 @@ const Profile = ({ user }) => {
             {profileData && (
               <div>
                 <div className="mb-3">
-                  <strong>Name:</strong> {profileData.name}
+                  <strong>Username:</strong> {profileData.username}
                 </div>
+                {profileData.firstName && (
+                  <div className="mb-3">
+                    <strong>First Name:</strong> {profileData.firstName}
+                  </div>
+                )}
+                {profileData.lastName && (
+                  <div className="mb-3">
+                    <strong>Last Name:</strong> {profileData.lastName}
+                  </div>
+                )}
                 <div className="mb-3">
                   <strong>Email:</strong> {profileData.email}
                 </div>
                 <div className="mb-3">
-                  <strong>Account Type:</strong> {profileData.isadmin ? 'Administrator' : 'Regular User'}
+                  <strong>Account Type:</strong> {profileData.is_admin ? 'Administrator' : 'Regular User'}
                 </div>
                 <div className="mb-3">
                   <strong>Created At:</strong> {new Date(profileData.created_at).toLocaleString()}

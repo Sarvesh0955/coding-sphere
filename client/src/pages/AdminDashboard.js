@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { getAllUsers } from '../services/authService';
+import { getAllProfiles } from '../services/authService';
 
 const AdminDashboard = () => {
-  const [users, setUsers] = useState([]);
+  const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchProfiles = async () => {
       try {
-        const data = await getAllUsers();
-        setUsers(data);
+        const data = await getAllProfiles();
+        setProfiles(data.profiles || []);
       } catch (err) {
-        setError('Failed to load users. Please try again later.');
+        setError('Failed to load profiles. Please try again later.');
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUsers();
+    fetchProfiles();
   }, []);
 
   if (loading) {
@@ -45,28 +45,30 @@ const AdminDashboard = () => {
       <h2>Admin Dashboard</h2>
       <div className="card mt-3">
         <div className="card-header bg-dark text-white">
-          <h4 className="mb-0">User Management</h4>
+          <h4 className="mb-0">User Profile Management</h4>
         </div>
         <div className="card-body">
           <div className="table-responsive">
             <table className="table table-striped">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  <th>Name</th>
+                  <th>Username</th>
                   <th>Email</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
                   <th>Admin</th>
                   <th>Created At</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map(user => (
-                  <tr key={user.id}>
-                    <td>{user.id}</td>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.isadmin ? 'Yes' : 'No'}</td>
-                    <td>{new Date(user.createdat).toLocaleString()}</td>
+                {profiles.map(profile => (
+                  <tr key={profile.username}>
+                    <td>{profile.username}</td>
+                    <td>{profile.email}</td>
+                    <td>{profile.first_name || '-'}</td>
+                    <td>{profile.last_name || '-'}</td>
+                    <td>{profile.is_admin ? 'Yes' : 'No'}</td>
+                    <td>{new Date(profile.created_at).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
