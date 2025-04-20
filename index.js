@@ -260,15 +260,6 @@ app.post('/api/verify-otp', async (req, res) => {
             return res.status(400).json({ message: result.message });
         }
         
-        // Handle different verification purposes
-        if (purpose === 'signup') {
-            // Set profile as verified in the database
-            const updatedProfile = await db.profileQueries.verifyProfileEmail(email);
-            if (!updatedProfile) {
-                return res.status(400).json({ message: 'User not found' });
-            }
-        }
-        
         res.status(200).json({ message: 'OTP verified successfully' });
     } catch (err) {
         console.error('Error verifying OTP:', err);

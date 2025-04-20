@@ -102,20 +102,6 @@ const profileQueries = {
             console.error('Error getting all profiles:', err);
             throw err;
         }
-    },
-    
-    // Mark profile's email as verified
-    verifyProfileEmail: async (email) => {
-        try {
-            const result = await pool.query(
-                'UPDATE PROFILES SET email_verified = true WHERE email = $1 RETURNING username, email, first_name, last_name, is_admin, email_verified',
-                [email]
-            );
-            return result.rows.length > 0 ? result.rows[0] : null;
-        } catch (err) {
-            console.error('Error verifying profile email:', err);
-            throw err;
-        }
     }
 };
 
