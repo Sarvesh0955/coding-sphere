@@ -31,13 +31,18 @@ const ForgotPassword = () => {
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       await sendVerificationOTP(formData.email, 'reset-password');
       setStep(2);
       setSuccess('Verification code sent to your email. Please check your inbox.');
     } catch (err) {
-      setError(err.message || 'Failed to send verification code. Please try again.');
+      if (err.message === 'No account found with this email address') {
+        setError('No account exists with this email address. Please check and try again.');
+      } else {
+        setError(err.message || 'Failed to send verification code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -65,13 +70,20 @@ const ForgotPassword = () => {
 
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       await resetPassword(formData.email, formData.otp, formData.newPassword);
       setSuccess('Password reset successfully. You can now login with your new password.');
       setStep(4); // Success state
     } catch (err) {
-      setError(err.message || 'Failed to reset password. Please try again.');
+      if (err.message === 'Invalid or expired verification code') {
+        setError('The verification code has expired. Please request a new code.');
+      } else if (err.message === 'User not found') {
+        setError('No account exists with this email address.');
+      } else {
+        setError(err.message || 'Failed to reset password. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -133,7 +145,7 @@ const ForgotPassword = () => {
                     <button 
                       type="button" 
                       className="btn btn-outline-secondary" 
-                      onClick={() => handleSendOTP({ preventDefault: () => {} })}
+                      onClick={(e) => handleSendOTP(e)}
                       disabled={loading}
                     >
                       Resend

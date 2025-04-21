@@ -135,6 +135,14 @@ const sendVerificationOTP = async (req, res) => {
             return res.status(400).json({ message: 'Email is required' });
         }
         
+        // Check if user exists when purpose is password reset
+        if (purpose === 'reset-password') {
+            const user = await profileModel.getProfileByEmail(email);
+            if (!user) {
+                return res.status(404).json({ message: 'No account found with this email address' });
+            }
+        }
+        
         const result = await emailService.sendOTP(email, purpose);
         
         if (!result.success) {
@@ -155,6 +163,14 @@ const verifyOTP = async (req, res) => {
         
         if (!email || !otp) {
             return res.status(400).json({ message: 'Email and OTP are required' });
+        }
+        
+        // Check if user exists when purpose is password reset
+        if (purpose === 'reset-password') {
+            const user = await profileModel.getProfileByEmail(email);
+            if (!user) {
+                return res.status(404).json({ message: 'No account found with this email address' });
+            }
         }
         
         const result = emailService.verifyOTP(email, otp, purpose);
