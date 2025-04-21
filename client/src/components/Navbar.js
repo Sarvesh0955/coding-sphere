@@ -28,9 +28,9 @@ const Navbar = ({ user, setUser }) => {
                 <Link className="nav-link" to="/profile">Profile</Link>
               </li>
             )}
-            {user && user.isadmin && (
+            {user && user.is_admin && (
               <li className="nav-item">
-                <Link className="nav-link" to="/admin/users">Admin Dashboard</Link>
+                <Link className="nav-link" to="/admin">Admin Dashboard</Link>
               </li>
             )}
           </ul>

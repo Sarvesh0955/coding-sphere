@@ -69,6 +69,20 @@ const profileQueries = {
             console.error('Error updating password:', err);
             throw err;
         }
+    },
+    
+    // Delete a user (for admin)
+    deleteUser: async (username) => {
+        try {
+            const result = await pool.query(
+                'DELETE FROM PROFILES WHERE username = $1 RETURNING username',
+                [username]
+            );
+            return result.rows.length > 0 ? result.rows[0] : null;
+        } catch (err) {
+            console.error('Error deleting user:', err);
+            throw err;
+        }
     }
 };
 

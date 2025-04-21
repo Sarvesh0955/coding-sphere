@@ -31,7 +31,7 @@ function App() {
       return <Navigate to="/login" />;
     }
     
-    if (requireAdmin && !user.isadmin) {
+    if (requireAdmin && !user.is_admin) {
       return <Navigate to="/" />;
     }
     
@@ -56,7 +56,7 @@ function App() {
             } 
           />
           <Route 
-            path="/admin/users" 
+            path="/admin" 
             element={
               <ProtectedRoute requireAdmin={true}>
                 <AdminDashboard />
