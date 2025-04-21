@@ -2,10 +2,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
-const bcrypt = require('bcrypt');
+const fs = require('fs');
 const { pool, testConnection } = require('./config/database');
 const { initDatabase: initSchema } = require('./config/schema');
-const profileModel = require('./models/profileModel');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -26,40 +25,25 @@ app.use(cors({
 
 app.use(express.json());
 
-// Create admin user if not exists
-const createAdminUser = async () => {
+// Initialize seed data
+const initSeedData = async () => {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'adminpassword';
-    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    console.log('Initializing seed data...');
+    // Read the seed data SQL file
+    const seedDataPath = path.join(__dirname, 'models', 'seed_data.sql');
+    const seedDataSql = fs.readFileSync(seedDataPath, 'utf8');
     
-    // Check if admin already exists
-    const existingAdmin = await profileModel.getProfileByEmail(adminEmail);
+    // Execute the SQL to insert seed data
+    const client = await pool.connect();
+    await client.query(seedDataSql);
+    client.release();
     
-    if (!existingAdmin) {
-      console.log('Admin user does not exist. Creating admin user...');
-      
-      // Hash the admin password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(adminPassword, saltRounds);
-      
-      // Create admin user
-      await profileModel.createProfile(
-        adminUsername,
-        hashedPassword,
-        adminEmail,
-        'Admin',
-        'User',
-        null, // profile_pic
-        true // isAdmin
-      );
-      
-      console.log(`Admin user created successfully with email: ${adminEmail} and username: ${adminUsername}`);
-    } else {
-      console.log('Admin user already exists');
-    }
+    console.log('Seed data initialized successfully');
+
+    console.log("Username: admin");
+    console.log("Password: adminpassword");
   } catch (err) {
-    console.error('Error creating admin user:', err);
+    console.error('Error initializing seed data:', err);
   }
 };
 
@@ -67,7 +51,7 @@ const createAdminUser = async () => {
 const setupDatabase = async () => {
   await initSchema();
   testConnection();
-  await createAdminUser();
+  await initSeedData(); // Add seed data initialization (includes admin user creation)
 };
 
 // Run database setup
