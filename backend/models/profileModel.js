@@ -83,6 +83,90 @@ const profileQueries = {
             console.error('Error deleting user:', err);
             throw err;
         }
+    },
+
+    // Get all available platforms
+    getAllPlatforms: async () => {
+        try {
+            const result = await pool.query('SELECT * FROM PLATFORM');
+            return result.rows;
+        } catch (err) {
+            console.error('Error getting all platforms:', err);
+            throw err;
+        }
+    },
+
+    // Get all user accounts
+    getUserAccounts: async (username) => {
+        try {
+            const result = await pool.query(
+                `SELECT ua.*, p.platform_name 
+                FROM USER_ACCOUNTS ua 
+                JOIN PLATFORM p ON ua.platform_id = p.platform_id 
+                WHERE ua.username = $1`,
+                [username]
+            );
+            return result.rows;
+        } catch (err) {
+            console.error('Error getting user accounts:', err);
+            throw err;
+        }
+    },
+
+    // Get user account by platform
+    getUserAccountByPlatform: async (username, platformId) => {
+        try {
+            const result = await pool.query(
+                'SELECT * FROM USER_ACCOUNTS WHERE username = $1 AND platform_id = $2',
+                [username, platformId]
+            );
+            return result.rows.length > 0 ? result.rows[0] : null;
+        } catch (err) {
+            console.error('Error getting user account by platform:', err);
+            throw err;
+        }
+    },
+
+    // Add a user account
+    addUserAccount: async (username, platformId, platformUsername, profileUrl = null) => {
+        try {
+            const result = await pool.query(
+                'INSERT INTO USER_ACCOUNTS (username, platform_id, platform_username, profile_url) VALUES ($1, $2, $3, $4) RETURNING *',
+                [username, platformId, platformUsername, profileUrl]
+            );
+            return result.rows[0];
+        } catch (err) {
+            console.error('Error adding user account:', err);
+            throw err;
+        }
+    },
+
+    // Update a user account
+    updateUserAccount: async (username, platformId, platformUsername, profileUrl = null) => {
+        try {
+            const result = await pool.query(
+                'UPDATE USER_ACCOUNTS SET platform_username = $1, profile_url = $2 WHERE username = $3 AND platform_id = $4 RETURNING *',
+                [platformUsername, profileUrl, username, platformId]
+            );
+            return result.rows[0];
+        } catch (err) {
+            console.error('Error updating user account:', err);
+            throw err;
+        }
+    },
+
+    // Delete a user account
+    deleteUserAccount: async (username, platformId) => {
+        try {
+            await pool.query(
+                'DELETE FROM USER_ACCOUNTS WHERE username = $1 AND platform_id = $2',
+                [username, platformId]
+            );
+            return true;
+        } catch (err) {
+            console.error('Error deleting user account:', err);
+            throw err;
+        }
     }
 };
 
