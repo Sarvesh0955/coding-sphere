@@ -4,6 +4,8 @@ import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
+import Dashboard from './pages/Dashboard';
+import CodeforcesDashboard from './pages/CodeforcesDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import Home from './pages/Home';
@@ -52,6 +54,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile user={user} />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard user={user} />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/codeforces" 
+            element={
+              <ProtectedRoute>
+                <CodeforcesDashboard user={user} />
               </ProtectedRoute>
             } 
           />

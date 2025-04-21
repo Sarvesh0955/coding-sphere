@@ -24,9 +24,16 @@ const Navbar = ({ user, setUser }) => {
               <Link className="nav-link" to="/">Home</Link>
             </li>
             {user && (
-              <li className="nav-item">
-                <Link className="nav-link" to="/profile">Profile</Link>
-              </li>
+              <>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/profile">Profile</Link>
+                </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/dashboard">
+                    <i className="fas fa-chart-line me-1"></i> Coding Dashboard
+                  </Link>
+                </li>
+              </>
             )}
             {user && user.is_admin && (
               <li className="nav-item">

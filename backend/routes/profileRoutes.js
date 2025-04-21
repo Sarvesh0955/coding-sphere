@@ -17,4 +17,15 @@ router.delete('/accounts/:platformId', authenticateToken, profileController.dele
 router.get('/admin/profiles', authenticateToken, isAdmin, profileController.getAllProfiles);
 router.get('/admin/all', authenticateToken, isAdmin, profileController.getAllProfiles);
 
+// Platform specific stats routes
+router.get('/codeforces/:username', profileController.getCodeforcesStats);
+router.get('/leetcode/:username', profileController.getLeetcodeStats);
+router.get('/combined/:userId', authenticateToken, profileController.getCombinedStats);
+
+// Get user profile - keep this after platform routes to avoid conflicts
+router.get('/:userId', profileController.getProfile);
+
+// Update user profile
+router.put('/:userId', profileController.updateProfile);
+
 module.exports = router;
