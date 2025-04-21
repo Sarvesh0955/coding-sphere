@@ -1,76 +1,11 @@
-const express = require('express');
-const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const db = require('./database');
-const emailService = require('./emailService');
+const profileModel = require('../models/profileModel');
+const emailService = require('../services/emailService');
+const { JWT_SECRET } = require('../middleware/auth');
 
-dotenv.config();
-
-const app = express();
-
-// Configure CORS
-app.use(cors({
-  origin: 'http://localhost:3001', // Your React frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-app.use(express.json());
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
-
-// Initialize database with schema.sql
-const setupDatabase = async () => {
-  await db.initDatabase();
-  db.testConnection();
-};
-
-// Run database setup
-setupDatabase();
-
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) {
-        return res.status(401).json({ message: 'Access token required' });
-    }
-    
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ message: 'Invalid or expired token' });
-        }
-        req.user = user;
-        next();
-    });
-};
-
-const isAdmin = (req, res, next) => {
-    if (!req.user.is_admin) {
-        return res.status(403).json({ message: 'Admin privileges required' });
-    }
-    next();
-};
-
-app.get('/', (req, res) => {
-    res.send('Hello, World!');
-});
-
-// Add a debugging endpoint to check OTP status
-app.get('/api/check-otp/:email', (req, res) => {
-    try {
-        const email = req.params.email;
-        const info = emailService.getStoredOTPInfo(email);
-        res.status(200).json(info);
-    } catch (err) {
-        console.error('Error checking OTP:', err);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.post('/api/signup', async (req, res) => {
+// User signup
+const signup = async (req, res) => {
     try {
         const { username, email, password, firstName, lastName, otp } = req.body;
         
@@ -78,13 +13,13 @@ app.post('/api/signup', async (req, res) => {
             return res.status(400).json({ message: 'Username, email and password are required' });
         }
         
-        const existingProfile = await db.profileQueries.getProfileByEmail(email);
+        const existingProfile = await profileModel.getProfileByEmail(email);
         if (existingProfile) {
             return res.status(409).json({ message: 'User with this email already exists' });
         }
 
         // Check if username is already taken
-        const existingUsername = await db.profileQueries.getProfileByUsername(username);
+        const existingUsername = await profileModel.getProfileByUsername(username);
         if (existingUsername) {
             return res.status(409).json({ message: 'Username is already taken' });
         }
@@ -107,7 +42,7 @@ app.post('/api/signup', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         
         console.log(`Creating profile: ${username}, ${email}`);
-        const profile = await db.profileQueries.createProfile(
+        const profile = await profileModel.createProfile(
             username, 
             hashedPassword, 
             email, 
@@ -142,9 +77,10 @@ app.post('/api/signup', async (req, res) => {
         console.error('Error in signup:', err);
         res.status(500).json({ message: 'Server error during registration', error: err.message });
     }
-});
+};
 
-app.post('/api/login', async (req, res) => {
+// User login
+const login = async (req, res) => {
     try {
         const { username, password } = req.body;
         
@@ -153,7 +89,7 @@ app.post('/api/login', async (req, res) => {
         }
         
         // Include password_hash for authentication
-        const profile = await db.profileQueries.getProfileByUsername(username, true);
+        const profile = await profileModel.getProfileByUsername(username, true);
         if (!profile) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -188,43 +124,10 @@ app.post('/api/login', async (req, res) => {
         console.error('Error in login:', err);
         res.status(500).json({ message: 'Server error during login' });
     }
-});
+};
 
-app.get('/api/profile', authenticateToken, async (req, res) => {
-    try {
-        const profile = await db.profileQueries.getProfileByUsername(req.user.username);
-        
-        if (!profile) {
-            return res.status(404).json({ message: 'Profile not found' });
-        }
-        
-        res.status(200).json({
-            username: profile.username,
-            email: profile.email,
-            firstName: profile.first_name,
-            lastName: profile.last_name,
-            profilePic: profile.profile_pic,
-            is_admin: profile.is_admin,
-            created_at: profile.created_at
-        });
-    } catch (err) {
-        console.error('Error fetching profile:', err);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-app.get('/api/admin/profiles', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const profiles = await db.profileQueries.getAllProfiles();
-        res.status(200).json({ profiles });
-    } catch (err) {
-        console.error('Error fetching profiles:', err);
-        res.status(500).json({ message: 'Server error' });
-    }
-});
-
-// Send OTP for email verification
-app.post('/api/send-verification-otp', async (req, res) => {
+// Send OTP for verification
+const sendVerificationOTP = async (req, res) => {
     try {
         const { email, purpose = 'verification' } = req.body;
         
@@ -243,10 +146,10 @@ app.post('/api/send-verification-otp', async (req, res) => {
         console.error('Error sending OTP:', err);
         res.status(500).json({ message: 'Server error' });
     }
-});
+};
 
 // Verify OTP
-app.post('/api/verify-otp', async (req, res) => {
+const verifyOTP = async (req, res) => {
     try {
         const { email, otp, purpose = 'verification' } = req.body;
         
@@ -265,10 +168,10 @@ app.post('/api/verify-otp', async (req, res) => {
         console.error('Error verifying OTP:', err);
         res.status(500).json({ message: 'Server error' });
     }
-});
+};
 
-// Reset password with OTP verification
-app.post('/api/reset-password', async (req, res) => {
+// Reset password
+const resetPassword = async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
         
@@ -277,7 +180,7 @@ app.post('/api/reset-password', async (req, res) => {
         }
         
         // Check if user exists with this email
-        const user = await db.profileQueries.getProfileByEmail(email);
+        const user = await profileModel.getProfileByEmail(email);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -292,7 +195,7 @@ app.post('/api/reset-password', async (req, res) => {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
         
-        const result = await db.profileQueries.updatePassword(email, hashedPassword);
+        const result = await profileModel.updatePassword(email, hashedPassword);
         
         if (!result) {
             return res.status(500).json({ message: 'Failed to update password' });
@@ -306,10 +209,25 @@ app.post('/api/reset-password', async (req, res) => {
         console.error('Error in password reset:', err);
         res.status(500).json({ message: 'Server error during password reset' });
     }
-});
+};
 
-const PORT = process.env.PORT || 3000;
+// Check OTP status (debugging route)
+const checkOTP = (req, res) => {
+    try {
+        const email = req.params.email;
+        const info = emailService.getStoredOTPInfo(email);
+        res.status(200).json(info);
+    } catch (err) {
+        console.error('Error checking OTP:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+module.exports = {
+    signup,
+    login,
+    sendVerificationOTP,
+    verifyOTP,
+    resetPassword,
+    checkOTP
+};

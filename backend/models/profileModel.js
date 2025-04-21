@@ -1,52 +1,5 @@
-const { Pool } = require('pg');
-const dotenv = require('dotenv');
-const fs = require('fs');
-const path = require('path');
+const { pool } = require('../config/database');
 
-// Load environment variables
-dotenv.config();
-
-// PostgreSQL connection configuration
-const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'password',
-    port: process.env.DB_PORT || 5432,
-});
-
-// Initialize database by running schema.sql
-const initDatabase = async () => {
-    try {
-        const client = await pool.connect();
-        
-        // Read schema file
-        const schemaPath = path.join(__dirname, 'schema.sql');
-        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-        
-        // Execute schema SQL
-        await client.query(schemaSql);
-        
-        console.log('Database initialized successfully');
-        client.release();
-    } catch (err) {
-        console.error('Error initializing database:', err);
-    }
-};
-
-// Test database connection
-const testConnection = () => {
-    pool.connect((err, client, done) => {
-        if (err) {
-            console.error('Error connecting to PostgreSQL database:', err);
-        } else {
-            console.log('Connected to PostgreSQL database');
-            done();
-        }
-    });
-};
-
-// Profile queries
 const profileQueries = {
     // Check if a profile exists by email
     getProfileByEmail: async (email) => {
@@ -119,9 +72,4 @@ const profileQueries = {
     }
 };
 
-module.exports = {
-    pool,
-    initDatabase,
-    testConnection,
-    profileQueries
-};
+module.exports = profileQueries;
