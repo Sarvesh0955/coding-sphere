@@ -28,10 +28,15 @@ const Navbar = ({ user, setUser }) => {
                 <li className="nav-item">
                   <Link className="nav-link" to="/profile">Profile</Link>
                 </li>
-                <li className="nav-item">
-                  <Link className="nav-link" to="/dashboard">
-                    <i className="fas fa-chart-line me-1"></i> Coding Dashboard
-                  </Link>
+                <li className="nav-item dropdown">
+                  <a className="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i className="fas fa-chart-line me-1"></i> Coding Dashboards
+                  </a>
+                  <ul className="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <li><Link className="dropdown-item" to="/dashboard">General Dashboard</Link></li>
+                    <li><Link className="dropdown-item" to="/codeforces">Codeforces Dashboard</Link></li>
+                    <li><Link className="dropdown-item" to="/leetcode">LeetCode Dashboard</Link></li>
+                  </ul>
                 </li>
               </>
             )}
