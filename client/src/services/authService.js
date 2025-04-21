@@ -144,6 +144,19 @@ export const verifiedRegister = async (username, email, password, firstName, las
   }
 };
 
+export const resetPassword = async (email, otp, newPassword) => {
+  try {
+    const response = await axios.post(`${API_URL}/reset-password`, {
+      email,
+      otp,
+      newPassword
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response ? error.response.data : { message: 'Network error' };
+  }
+};
+
 export const authAxios = axios.create();
 
 authAxios.interceptors.request.use(

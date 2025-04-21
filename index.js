@@ -267,6 +267,47 @@ app.post('/api/verify-otp', async (req, res) => {
     }
 });
 
+// Reset password with OTP verification
+app.post('/api/reset-password', async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ message: 'Email, OTP and new password are required' });
+        }
+        
+        // Check if user exists with this email
+        const user = await db.profileQueries.getProfileByEmail(email);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Verify OTP
+        const otpResult = emailService.verifyOTP(email, otp, 'reset-password');
+        if (!otpResult.valid) {
+            return res.status(400).json({ message: otpResult.message || 'Invalid or expired verification code' });
+        }
+        
+        // Hash new password and update
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        
+        const result = await db.profileQueries.updatePassword(email, hashedPassword);
+        
+        if (!result) {
+            return res.status(500).json({ message: 'Failed to update password' });
+        }
+        
+        res.status(200).json({ 
+            message: 'Password reset successful',
+            username: result.username
+        });
+    } catch (err) {
+        console.error('Error in password reset:', err);
+        res.status(500).json({ message: 'Server error during password reset' });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

@@ -102,6 +102,20 @@ const profileQueries = {
             console.error('Error getting all profiles:', err);
             throw err;
         }
+    },
+
+    // Update a user's password
+    updatePassword: async (email, passwordHash) => {
+        try {
+            const result = await pool.query(
+                'UPDATE PROFILES SET password_hash = $1 WHERE email = $2 RETURNING username, email',
+                [passwordHash, email]
+            );
+            return result.rows.length > 0 ? result.rows[0] : null;
+        } catch (err) {
+            console.error('Error updating password:', err);
+            throw err;
+        }
     }
 };
 

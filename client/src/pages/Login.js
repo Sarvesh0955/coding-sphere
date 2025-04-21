@@ -67,6 +67,11 @@ const Login = ({ setUser }) => {
                   onChange={handleChange}
                   required
                 />
+                <div className="mt-1">
+                  <Link to="/forgot-password" className="text-decoration-none small">
+                    Forgot your password?
+                  </Link>
+                </div>
               </div>
               <button 
                 type="submit" 
