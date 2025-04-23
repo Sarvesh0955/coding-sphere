@@ -574,8 +574,6 @@ const Dashboard = ({ user }) => {
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="platform tabs">
           <Tab label="Combined Stats" />
-          {cfData && <Tab label="Codeforces" />}
-          {lcData && <Tab label="LeetCode" />}
         </Tabs>
       </Box>
 
@@ -676,6 +674,26 @@ const Dashboard = ({ user }) => {
                           {userAccounts.find(a => a.platform_name.toLowerCase() === 'leetcode')?.platform_username || '-'}
                         </Typography>
                         <Typography variant="body2">LeetCode</Typography>
+                      </Box>
+                      {/* Add LeetCode Profile Link */}
+                      <Box ml="auto">
+                        <Button 
+                          variant="outlined" 
+                          size="small" 
+                          href={userAccounts.find(a => a.platform_name.toLowerCase() === 'leetcode')?.profile_url || `https://leetcode.com/${userAccounts.find(a => a.platform_name.toLowerCase() === 'leetcode')?.platform_username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{ 
+                            color: 'white',
+                            borderColor: 'white',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255,255,255,0.1)',
+                              borderColor: 'white'
+                            }
+                          }}
+                        >
+                          Visit Profile
+                        </Button>
                       </Box>
                     </Box>
                     <Grid container spacing={2} sx={{ mt: 2 }}>

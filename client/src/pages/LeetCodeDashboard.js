@@ -489,19 +489,18 @@ const LeetCodeDashboard = ({ user }) => {
               <Typography variant="body1" fontWeight="medium">
                 Solved {lcData.totalSolved || 0} of {lcData.totalQuestions || 0} problems
               </Typography>
-              <Box mt={2}>
+              <Box mt={2} display="flex" justifyContent="flex-end" alignItems="center">
                 <Button
-                  variant="outlined"
-                  size="small"
-                  color="inherit"
+                  variant="contained"
+                  size="medium"
+                  color="secondary"
                   href={`https://leetcode.com/${lcAccount.platform_username}`}
                   target="_blank"
                   rel="noopener"
+                  startIcon={<CodeIcon />}
                   sx={{ 
-                    borderColor: 'rgba(255,255,255,0.5)',
                     '&:hover': {
-                      borderColor: 'white',
-                      bgcolor: 'rgba(255,255,255,0.1)'
+                      bgcolor: 'rgba(255,255,255,0.2)'
                     }
                   }}
                 >
