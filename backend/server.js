@@ -10,6 +10,7 @@ const { initDatabase: initSchema } = require('./config/schema');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const questionRoutes = require('./routes/questionRoutes');
 
 // Load environment variables from backend/.env
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -66,6 +67,7 @@ app.get('/', (req, res) => {
 app.use('/api', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/questions', questionRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 3000;

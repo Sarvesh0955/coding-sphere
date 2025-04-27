@@ -16,6 +16,12 @@ CREATE TABLE IF NOT EXISTS PLATFORM (
     platform_name VARCHAR UNIQUE NOT NULL
 );
 
+-- TOPICS Table
+CREATE TABLE IF NOT EXISTS TOPICS (
+    topic_id SERIAL PRIMARY KEY,
+    topic_name VARCHAR UNIQUE NOT NULL
+);
+
 -- USER_ACCOUNTS Table
 CREATE TABLE IF NOT EXISTS USER_ACCOUNTS (
     username VARCHAR REFERENCES PROFILES(username) ON DELETE CASCADE,
@@ -31,8 +37,8 @@ CREATE TABLE IF NOT EXISTS QUESTION (
     question_id VARCHAR NOT NULL,
     title VARCHAR,
     link TEXT,
-    topics TEXT[],
-    difficulty VARCHAR CHECK (difficulty IN ('Easy','Medium', 'Hard')),
+    topics TEXT[], -- Keep the array for backward compatibility
+    difficulty VARCHAR CHECK (difficulty IN ('EASY','MEDIUM', 'HARD')),
     PRIMARY KEY (platform_id, question_id)
 );
 
@@ -50,6 +56,15 @@ CREATE TABLE IF NOT EXISTS QUESTION_COMPANY (
     PRIMARY KEY (platform_id, question_id, company_id),
     FOREIGN KEY (platform_id, question_id) REFERENCES QUESTION(platform_id, question_id),
     FOREIGN KEY (company_id) REFERENCES COMPANY(company_id)
+);
+
+-- QUESTION_TOPIC Table
+CREATE TABLE IF NOT EXISTS QUESTION_TOPIC (
+    platform_id INT,
+    question_id VARCHAR,
+    topic_id INT REFERENCES TOPICS(topic_id) ON DELETE CASCADE,
+    PRIMARY KEY (platform_id, question_id, topic_id),
+    FOREIGN KEY (platform_id, question_id) REFERENCES QUESTION(platform_id, question_id)
 );
 
 -- SOLVED Table

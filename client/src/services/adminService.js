@@ -32,9 +32,25 @@ const deleteUser = async (username) => {
   }
 };
 
+// Upload CSV file with questions (admin only)
+const uploadCSV = async (formData) => {
+  try {
+    const response = await axios.post(`${API_URL}/admin/questions/upload-csv`, formData, {
+      headers: { 
+        ...authHeader(),
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error uploading CSV' };
+  }
+};
+
 const adminService = {
   getAllUsers,
-  deleteUser
+  deleteUser,
+  uploadCSV
 };
 
 export default adminService;

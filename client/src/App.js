@@ -9,6 +9,7 @@ import CodeforcesDashboard from './pages/CodeforcesDashboard';
 import LeetCodeDashboard from './pages/LeetCodeDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ForgotPassword from './pages/ForgotPassword';
+import Questions from './pages/Questions';
 import Home from './pages/Home';
 import { getToken, getUserFromToken } from './services/authService';
 
@@ -50,6 +51,7 @@ function App() {
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/signup" element={<Signup setUser={setUser} />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/questions" element={<Questions />} />
           <Route 
             path="/profile" 
             element={

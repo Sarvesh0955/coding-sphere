@@ -23,6 +23,13 @@ const Navbar = ({ user, setUser }) => {
             <li className="nav-item">
               <Link className="nav-link" to="/">Home</Link>
             </li>
+            
+            <li className="nav-item">
+              <Link className="nav-link" to="/questions">
+                <i className="fas fa-question-circle me-1"></i> Questions
+              </Link>
+            </li>
+            
             {user && (
               <>
                 <li className="nav-item">
