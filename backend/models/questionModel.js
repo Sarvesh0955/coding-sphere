@@ -1,4 +1,6 @@
 const { pool } = require('../config/database');
+// Import platformQueries for platform-related functions
+const platformQueries = require('./platformModel');
 
 const questionQueries = {
     // Get all questions with optional filters
@@ -591,15 +593,9 @@ const questionQueries = {
         }
     },
     
-    // Get all platforms
+    // Get all platforms - use the centralized function from platformModel
     getAllPlatforms: async () => {
-        try {
-            const result = await pool.query('SELECT * FROM PLATFORM ORDER BY platform_name');
-            return result.rows;
-        } catch (err) {
-            console.error('Error getting all platforms:', err);
-            throw err;
-        }
+        return platformQueries.getAllPlatforms();
     }
 };
 

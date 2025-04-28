@@ -1,4 +1,5 @@
 const questionModel = require('../models/questionModel');
+const platformModel = require('../models/platformModel');
 
 const questionController = {
     bulkCreateQuestions: async (req, res) => {
@@ -162,7 +163,7 @@ const questionController = {
     
     getAllPlatforms: async (req, res) => {
         try {
-            const platforms = await questionModel.getAllPlatforms();
+            const platforms = await platformModel.getAllPlatforms();
             res.status(200).json(platforms);
         } catch (err) {
             console.error('Error in getAllPlatforms controller:', err);

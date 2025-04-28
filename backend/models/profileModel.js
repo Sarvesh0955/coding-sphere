@@ -1,7 +1,6 @@
 const { pool } = require('../config/database');
 
 const profileQueries = {
-    // Check if a profile exists by email
     getProfileByEmail: async (email) => {
         try {
             const result = await pool.query('SELECT * FROM PROFILES WHERE email = $1', [email]);
@@ -12,7 +11,6 @@ const profileQueries = {
         }
     },
 
-    // Create a new profile
     createProfile: async (username, passwordHash, email, firstName = null, lastName = null, profilePic = null, isAdmin = false) => {
         try {
             const result = await pool.query(
@@ -26,15 +24,13 @@ const profileQueries = {
         }
     },
 
-    // Get profile by username - Include password_hash for login authentication
+    //both general and protected access
     getProfileByUsername: async (username, includePassword = false) => {
         try {
             let query;
             if (includePassword) {
-                // Include password_hash for authentication
                 query = 'SELECT username, email, password_hash, first_name, last_name, profile_pic, is_admin, created_at FROM PROFILES WHERE username = $1';
             } else {
-                // Exclude password_hash for general profile access
                 query = 'SELECT username, email, first_name, last_name, profile_pic, is_admin, created_at FROM PROFILES WHERE username = $1';
             }
             
@@ -46,7 +42,6 @@ const profileQueries = {
         }
     },
 
-    // Get all profiles (for admin)
     getAllProfiles: async () => {
         try {
             const result = await pool.query('SELECT username, email, first_name, last_name, is_admin, created_at FROM PROFILES');
@@ -57,7 +52,6 @@ const profileQueries = {
         }
     },
 
-    // Update a user's password
     updatePassword: async (email, passwordHash) => {
         try {
             const result = await pool.query(
@@ -71,7 +65,6 @@ const profileQueries = {
         }
     },
     
-    // Delete a user (for admin)
     deleteUser: async (username) => {
         try {
             const result = await pool.query(
@@ -85,18 +78,6 @@ const profileQueries = {
         }
     },
 
-    // Get all available platforms
-    getAllPlatforms: async () => {
-        try {
-            const result = await pool.query('SELECT * FROM PLATFORM');
-            return result.rows;
-        } catch (err) {
-            console.error('Error getting all platforms:', err);
-            throw err;
-        }
-    },
-
-    // Get all user accounts
     getUserAccounts: async (username) => {
         try {
             const result = await pool.query(
@@ -113,7 +94,6 @@ const profileQueries = {
         }
     },
 
-    // Get user account by platform
     getUserAccountByPlatform: async (username, platformId) => {
         try {
             const result = await pool.query(
@@ -127,7 +107,6 @@ const profileQueries = {
         }
     },
 
-    // Add a user account
     addUserAccount: async (username, platformId, platformUsername, profileUrl = null) => {
         try {
             const result = await pool.query(
@@ -141,7 +120,6 @@ const profileQueries = {
         }
     },
 
-    // Update a user account
     updateUserAccount: async (username, platformId, platformUsername, profileUrl = null) => {
         try {
             const result = await pool.query(
@@ -155,7 +133,6 @@ const profileQueries = {
         }
     },
 
-    // Delete a user account
     deleteUserAccount: async (username, platformId) => {
         try {
             await pool.query(

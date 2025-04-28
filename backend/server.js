@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { pool, testConnection } = require('./config/database');
-const { initDatabase: initSchema } = require('./config/schema');
+const { initDatabase: initSchema, initSeedData: initSeed, ensureAdminExists } = require('./config/schema');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -26,33 +26,12 @@ app.use(cors({
 
 app.use(express.json());
 
-// Initialize seed data
-const initSeedData = async () => {
-  try {
-    console.log('Initializing seed data...');
-    // Read the seed data SQL file
-    const seedDataPath = path.join(__dirname, 'models', 'seed_data.sql');
-    const seedDataSql = fs.readFileSync(seedDataPath, 'utf8');
-    
-    // Execute the SQL to insert seed data
-    const client = await pool.connect();
-    await client.query(seedDataSql);
-    client.release();
-    
-    console.log('Seed data initialized successfully');
-
-    console.log("Username: admin");
-    console.log("Password: adminpassword");
-  } catch (err) {
-    console.error('Error initializing seed data:', err);
-  }
-};
-
 // Initialize database with schema
 const setupDatabase = async () => {
   await initSchema();
   testConnection();
-  await initSeedData(); // Add seed data initialization (includes admin user creation)
+  await initSeed(); 
+  await ensureAdminExists(); 
 };
 
 // Run database setup

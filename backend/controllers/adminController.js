@@ -3,7 +3,6 @@ const questionModel = require('../models/questionModel');
 const csv = require('csv-parser');
 const { Readable } = require('stream');
 
-// Get all users (admin only)
 const getAllUsers = async (req, res) => {
     try {
         const users = await profileModel.getAllProfiles();

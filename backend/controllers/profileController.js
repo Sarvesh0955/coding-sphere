@@ -1,4 +1,5 @@
 const profileModel = require('../models/profileModel');
+const platformModel = require('../models/platformModel');
 const axios = require('axios');
 
 // Get user's own profile
@@ -28,7 +29,7 @@ const getProfile = async (req, res) => {
 // Get all available platforms
 const getPlatforms = async (req, res) => {
     try {
-        const platforms = await profileModel.getAllPlatforms();
+        const platforms = await platformModel.getAllPlatforms();
         res.status(200).json({ platforms });
     } catch (err) {
         console.error('Error fetching platforms:', err);
