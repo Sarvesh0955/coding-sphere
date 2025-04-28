@@ -22,6 +22,7 @@ const Questions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,6 +58,11 @@ const Questions = () => {
       const token = getToken();
       const user = token ? getUserFromToken() : null;
       setIsAuthenticated(!!user);
+      
+      // Check if user is an admin
+      if (user) {
+        setIsAdmin(user.is_admin === true);
+      }
     };
     
     // Load questions and filter options
@@ -521,13 +527,15 @@ const Questions = () => {
                       >
                         <EditIcon />
                       </IconButton>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleDelete(question)}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      {isAdmin && (
+                        <IconButton 
+                          size="small" 
+                          onClick={() => handleDelete(question)}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      )}
                     </>
                   )}
                 </Box>

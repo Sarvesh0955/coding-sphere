@@ -1,9 +1,7 @@
 const { pool } = require('../config/database');
-// Import platformQueries for platform-related functions
 const platformQueries = require('./platformModel');
 
 const questionQueries = {
-    // Get all questions with optional filters
     getAllQuestions: async (filters = {}) => {
         try {
             let query = `
@@ -27,13 +25,11 @@ const questionQueries = {
             const queryParams = [];
             const conditions = [];
             
-            // Add search filter
             if (filters.search) {
                 queryParams.push(`%${filters.search}%`);
                 conditions.push(`(q.title ILIKE $${queryParams.length} OR q.question_id ILIKE $${queryParams.length})`);
             }
             
-            // Add topic filter using the TOPICS table
             if (filters.topic) {
                 queryParams.push(filters.topic);
                 conditions.push(`EXISTS (
@@ -45,13 +41,11 @@ const questionQueries = {
                 )`);
             }
             
-            // Add difficulty filter
             if (filters.difficulty) {
                 queryParams.push(filters.difficulty);
                 conditions.push(`q.difficulty = $${queryParams.length}`);
             }
             
-            // Add company filter
             if (filters.companyId) {
                 queryParams.push(filters.companyId);
                 conditions.push(`EXISTS (
@@ -62,23 +56,19 @@ const questionQueries = {
                 )`);
             }
             
-            // Add platform filter
             if (filters.platformId) {
                 queryParams.push(filters.platformId);
                 conditions.push(`q.platform_id = $${queryParams.length}`);
             }
-            
-            // Add WHERE clause if filters exist
+        
             if (conditions.length > 0) {
                 query += ` WHERE ${conditions.join(' AND ')}`;
             }
             
-            // Add sorting
             query += ` ORDER BY q.platform_id, q.question_id`;
             
             const result = await pool.query(query, queryParams);
             
-            // Combine topics from array and relation table for backward compatibility
             return result.rows.map(row => ({
                 ...row,
                 topics: Array.from(new Set([...(row.topics || []), ...(row.topics_from_relation || [])]))
@@ -593,7 +583,6 @@ const questionQueries = {
         }
     },
     
-    // Get all platforms - use the centralized function from platformModel
     getAllPlatforms: async () => {
         return platformQueries.getAllPlatforms();
     }
