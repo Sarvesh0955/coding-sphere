@@ -1,8 +1,3 @@
--- Simplified version of the PostgreSQL functions with better error handling
-
--- Function to get all platforms sorted by name
-
--- Function to get platform by ID
 CREATE OR REPLACE FUNCTION get_platform_by_id(p_platform_id INTEGER)
 RETURNS TABLE (
     platform_id INTEGER,
@@ -20,7 +15,6 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to get platform by name
 CREATE OR REPLACE FUNCTION get_platform_by_name(p_platform_name VARCHAR)
 RETURNS TABLE (
     platform_id INTEGER,
@@ -38,7 +32,6 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to create a new platform or return existing one
 CREATE OR REPLACE FUNCTION create_platform(p_platform_name VARCHAR)
 RETURNS JSON AS $$
 DECLARE
@@ -46,13 +39,11 @@ DECLARE
     new_platform RECORD;
     result JSON;
 BEGIN
-    -- Check if platform already exists
     SELECT * INTO existing_platform
     FROM PLATFORM
     WHERE platform_name = p_platform_name;
     
     IF FOUND THEN
-        -- Return existing platform with exists flag
         SELECT json_build_object(
             'exists', true,
             'platform', json_build_object(
@@ -61,7 +52,7 @@ BEGIN
             )
         ) INTO result;
     ELSE
-        -- Create new platform
+
         INSERT INTO PLATFORM (platform_name)
         VALUES (p_platform_name)
         RETURNING * INTO new_platform;
@@ -83,7 +74,6 @@ EXCEPTION
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to update platform name
 CREATE OR REPLACE FUNCTION update_platform(p_platform_id INTEGER, p_platform_name VARCHAR)
 RETURNS TABLE (
     platform_id INTEGER,
@@ -101,24 +91,6 @@ EXCEPTION
         RAISE;
 END;
 $$ LANGUAGE plpgsql;
-
--- Function to delete platform and return the deleted record
--- CREATE OR REPLACE FUNCTION delete_platform(p_platform_id INTEGER)
--- RETURNS TABLE (
---     platform_id INTEGER,
---     platform_name VARCHAR
--- ) AS $$
--- BEGIN
---     RETURN QUERY
---     DELETE FROM PLATFORM
---     WHERE platform_id = p_platform_id
---     RETURNING platform_id, platform_name;
--- EXCEPTION
---     WHEN OTHERS THEN
---         RAISE NOTICE 'Error in delete_platform: %', SQLERRM;
---         RAISE;
--- END;
--- $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE PROCEDURE delete_platform(p_platform_id INTEGER)
 LANGUAGE plpgsql AS $$
@@ -159,7 +131,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create Profile Function
 CREATE OR REPLACE FUNCTION create_profile(
     p_username VARCHAR,
     p_password_hash VARCHAR,
