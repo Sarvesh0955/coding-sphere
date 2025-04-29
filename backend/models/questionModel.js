@@ -120,20 +120,20 @@ const questionQueries = {
     },
     
     // Create a new question
-    createQuestion: async (platformId, questionId, title, link, topics, difficulty) => {
+    createQuestion: async (platformId, questionId, title, link, topics, difficulty, companies = []) => {
         try {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
                 
-                // Insert into QUESTION table (keeping the topics array for backward compatibility)
+                // Insert into QUESTION table
                 const questionResult = await client.query(
                     `INSERT INTO QUESTION (platform_id, question_id, title, link, topics, difficulty)
                     VALUES ($1, $2, $3, $4, $5, $6)
                     RETURNING *`,
                     [platformId, questionId, title, link, topics, difficulty]
                 );
-                
+
                 // If topics are provided, associate them with the question in QUESTION_TOPIC table
                 if (topics && topics.length > 0) {
                     for (const topicName of topics) {
@@ -161,6 +161,18 @@ const questionQueries = {
                             VALUES ($1, $2, $3)
                             ON CONFLICT DO NOTHING`,
                             [platformId, questionId, topicId]
+                        );
+                    }
+                }
+
+                // If companies are provided, associate them with the question
+                if (companies && companies.length > 0) {
+                    for (const companyId of companies) {
+                        await client.query(
+                            `INSERT INTO QUESTION_COMPANY (platform_id, question_id, company_id)
+                            VALUES ($1, $2, $3)
+                            ON CONFLICT DO NOTHING`,
+                            [platformId, questionId, companyId]
                         );
                     }
                 }
