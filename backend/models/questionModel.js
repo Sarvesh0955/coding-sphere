@@ -351,7 +351,7 @@ const questionQueries = {
                 await client.query(
                     `DELETE FROM QUESTION_TOPIC 
                     WHERE platform_id = $1 AND question_id = $2`,
-                    [platformId, questionId]
+                    [platformId, questionId]    
                 );
                 
                 // The QUESTION_COMPANY relationships will be removed automatically via CASCADE

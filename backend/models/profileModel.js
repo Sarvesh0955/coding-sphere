@@ -145,6 +145,8 @@ const profileQueries = {
             throw err;
         }
     }
+    
+    
 };
 
 module.exports = profileQueries;
