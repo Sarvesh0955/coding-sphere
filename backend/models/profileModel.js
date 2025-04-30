@@ -53,13 +53,16 @@ const profileQueries = {
     },
 
     updatePassword: async (email, passwordHash) => {
-        try {
+        try{
             const result = await pool.query(
                 'UPDATE PROFILES SET password_hash = $1 WHERE email = $2 RETURNING username, email',
                 [passwordHash, email]
             );
             return result.rows.length > 0 ? result.rows[0] : null;
         } catch (err) {
+            if (err.message === 'New password cannot be the same as the old password') {
+                throw new Error('Please choose a different password than your current one');
+            }
             console.error('Error updating password:', err);
             throw err;
         }
@@ -73,6 +76,9 @@ const profileQueries = {
             );
             return result.rows.length > 0 ? result.rows[0] : null;
         } catch (err) {
+            if (err.message === 'Cannot delete admin user') {
+                throw new Error('Admin users cannot be deleted');
+            }
             console.error('Error deleting user:', err);
             throw err;
         }
