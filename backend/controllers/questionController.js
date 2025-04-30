@@ -2,29 +2,9 @@ const questionModel = require('../models/questionModel');
 const platformModel = require('../models/platformModel');
 
 const questionController = {
-    bulkCreateQuestions: async (req, res) => {
-        try {
-            const questions = req.body;
-            
-            if (!Array.isArray(questions) || questions.length === 0) {
-                return res.status(400).json({ error: 'Request must include an array of questions' });
-            }
-            
-            const createdQuestions = await questionModel.bulkCreateQuestions(questions);
-            
-            res.status(201).json({
-                message: `Successfully created ${createdQuestions.length} questions`,
-                questions: createdQuestions
-            });
-        } catch (err) {
-            console.error('Error in bulkCreateQuestions controller:', err);
-            res.status(500).json({ error: 'Failed to create questions in bulk' });
-        }
-    },
     
     getAllQuestions: async (req, res) => {
         try {
-            // Parse filters from query parameters
             const filters = {
                 search: req.query.search,
                 topic: req.query.topic,
@@ -62,7 +42,6 @@ const questionController = {
             const { platformId } = req.params;
             const { title, link, topics, difficulty } = req.body;
             
-            // Generate a unique question ID - you could use a UUID or a timestamp-based ID
             const questionId = `Q${Date.now().toString(36)}${Math.random().toString(36).substr(2, 5)}`.toUpperCase();
             
             const createdQuestion = await questionModel.createQuestion(
@@ -153,7 +132,7 @@ const questionController = {
             
             const result = await questionModel.createCompany(companyName);
             
-            const statusCode = result.exists ? 200 : 201; // 200 if already exists, 201 if newly created
+            const statusCode = result.exists ? 200 : 201;
             res.status(statusCode).json(result);
         } catch (err) {
             console.error('Error in createCompany controller:', err);

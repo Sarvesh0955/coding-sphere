@@ -1,19 +1,16 @@
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
-// Create a transporter
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // You can use other services like 'SendGrid', 'Mailgun', etc.
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER || 'your-email@gmail.com', // Your email
-    pass: process.env.EMAIL_PASSWORD || 'your-app-password' // Your app password
+    user: process.env.EMAIL_USER || 'your-email@gmail.com', 
+    pass: process.env.EMAIL_PASSWORD || 'your-app-password' 
   }
 });
 
-// Store OTPs (in a real app, consider using Redis or another database)
 const otpStore = new Map();
 
-// Add this function to debug OTP storage
 const getStoredOTPInfo = (email) => {
   const data = otpStore.get(email);
   if (!data) {
@@ -29,18 +26,14 @@ const getStoredOTPInfo = (email) => {
   };
 };
 
-// Generate a 6-digit OTP
 const generateOTP = () => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
-// Send OTP via email
 const sendOTP = async (email, purpose = 'verification') => {
   try {
-    // Generate OTP
     const otp = generateOTP();
     
-    // Store OTP with expiry (15 minutes)
     otpStore.set(email, {
       otp,
       purpose,
@@ -50,7 +43,6 @@ const sendOTP = async (email, purpose = 'verification') => {
     
     console.log(`OTP generated for ${email}: ${otp} (purpose: ${purpose})`);
     
-    // Email content
     const mailOptions = {
       from: process.env.EMAIL_USER || 'your-email@gmail.com',
       to: email,
@@ -66,7 +58,6 @@ const sendOTP = async (email, purpose = 'verification') => {
       `
     };
     
-    // Send email
     await transporter.sendMail(mailOptions);
     
     return { success: true };
@@ -76,7 +67,6 @@ const sendOTP = async (email, purpose = 'verification') => {
   }
 };
 
-// Verify OTP
 const verifyOTP = (email, otp, purpose = 'verification') => {
   console.log(`Verifying OTP for ${email}: ${otp} (purpose: ${purpose})`);
   
@@ -102,7 +92,6 @@ const verifyOTP = (email, otp, purpose = 'verification') => {
   
   if (new Date() > storedData.expiresAt) {
     console.log(`OTP expired for ${email}`);
-    // Clean up expired OTP
     otpStore.delete(email);
     return { valid: false, message: 'OTP has expired' };
   }
@@ -114,7 +103,6 @@ const verifyOTP = (email, otp, purpose = 'verification') => {
   
   console.log(`OTP verified successfully for ${email}`);
   
-  // Clean up used OTP
   otpStore.delete(email);
   
   return { valid: true };

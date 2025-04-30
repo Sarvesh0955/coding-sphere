@@ -2,7 +2,6 @@ const profileModel = require('../models/profileModel');
 const platformModel = require('../models/platformModel');
 const axios = require('axios');
 
-// Get user's own profile
 const getProfile = async (req, res) => {
     try {
         const profile = await profileModel.getProfileByUsername(req.user.username);
@@ -26,7 +25,6 @@ const getProfile = async (req, res) => {
     }
 };
 
-// Get all available platforms
 const getPlatforms = async (req, res) => {
     try {
         const platforms = await platformModel.getAllPlatforms();
@@ -37,7 +35,6 @@ const getPlatforms = async (req, res) => {
     }
 };
 
-// Get all user accounts
 const getUserAccounts = async (req, res) => {
     try {
         const accounts = await profileModel.getUserAccounts(req.user.username);
@@ -48,7 +45,6 @@ const getUserAccounts = async (req, res) => {
     }
 };
 
-// Add a user account
 const addUserAccount = async (req, res) => {
     try {
         const { platformId, platformUsername, profileUrl } = req.body;
@@ -57,7 +53,6 @@ const addUserAccount = async (req, res) => {
             return res.status(400).json({ message: 'Platform ID and username are required' });
         }
         
-        // Check if account already exists
         const existingAccount = await profileModel.getUserAccountByPlatform(req.user.username, platformId);
         if (existingAccount) {
             return res.status(409).json({ message: 'Account for this platform already exists' });
@@ -77,7 +72,6 @@ const addUserAccount = async (req, res) => {
     }
 };
 
-// Update a user account
 const updateUserAccount = async (req, res) => {
     try {
         const { platformId } = req.params;
@@ -87,7 +81,6 @@ const updateUserAccount = async (req, res) => {
             return res.status(400).json({ message: 'Platform username is required' });
         }
         
-        // Check if account exists
         const existingAccount = await profileModel.getUserAccountByPlatform(req.user.username, platformId);
         if (!existingAccount) {
             return res.status(404).json({ message: 'Account not found' });
@@ -107,12 +100,10 @@ const updateUserAccount = async (req, res) => {
     }
 };
 
-// Delete a user account
 const deleteUserAccount = async (req, res) => {
     try {
         const { platformId } = req.params;
         
-        // Check if account exists
         const existingAccount = await profileModel.getUserAccountByPlatform(req.user.username, platformId);
         if (!existingAccount) {
             return res.status(404).json({ message: 'Account not found' });
@@ -127,7 +118,6 @@ const deleteUserAccount = async (req, res) => {
     }
 };
 
-// Get all profiles (admin only)
 const getAllProfiles = async (req, res) => {
     try {
         const profiles = await profileModel.getAllProfiles();
@@ -138,7 +128,6 @@ const getAllProfiles = async (req, res) => {
     }
 };
 
-// Get Codeforces stats for a user
 const getCodeforcesStats = async (req, res) => {
     try {
         const { username } = req.params;
@@ -147,7 +136,6 @@ const getCodeforcesStats = async (req, res) => {
             return res.status(400).json({ message: 'Username is required' });
         }
         
-        // Call Codeforces API
         const userInfo = await axios.get(`https://codeforces.com/api/user.info?handles=${username}`);
         const submissions = await axios.get(`https://codeforces.com/api/user.status?handle=${username}`);
         const ratings = await axios.get(`https://codeforces.com/api/user.rating?handle=${username}`);
@@ -170,7 +158,6 @@ const getCodeforcesStats = async (req, res) => {
     }
 };
 
-// Get LeetCode stats for a user
 const getLeetcodeStats = async (req, res) => {
     try {
         const { username } = req.params;
@@ -179,7 +166,6 @@ const getLeetcodeStats = async (req, res) => {
             return res.status(400).json({ message: 'Username is required' });
         }
         
-        // Call LeetCode API
         const response = await axios.get(`https://leetcode-stats-api.herokuapp.com/${username}`);
         
         if (response.data.status === 'error') {
@@ -202,12 +188,10 @@ const getLeetcodeStats = async (req, res) => {
     }
 };
 
-// Get combined stats for a user
 const getCombinedStats = async (req, res) => {
     try {
         const { userId } = req.params;
         
-        // Get user accounts
         const accounts = await profileModel.getUserAccounts(userId);
         
         if (!accounts || accounts.length === 0) {
@@ -216,7 +200,6 @@ const getCombinedStats = async (req, res) => {
         
         const stats = { platforms: {} };
         
-        // Fetch stats for each platform account
         for (const account of accounts) {
             if (account.platform_name.toLowerCase() === 'codeforces') {
                 try {
@@ -256,29 +239,24 @@ const getCombinedStats = async (req, res) => {
     }
 };
 
-// Update user profile
 const updateProfile = async (req, res) => {
     try {
         const { userId } = req.params;
         const { firstName, lastName, email, profilePic } = req.body;
         
-        // Validate request
         if (!firstName && !lastName && !email && !profilePic) {
             return res.status(400).json({ message: 'No update data provided' });
         }
         
-        // Check if profile exists
         const existingProfile = await profileModel.getProfileById(userId);
         if (!existingProfile) {
             return res.status(404).json({ message: 'Profile not found' });
         }
         
-        // Check if user has permission to update this profile
         if (req.user && req.user.username !== userId && !req.user.is_admin) {
             return res.status(403).json({ message: 'Not authorized to update this profile' });
         }
         
-        // Update the profile
         const updatedProfile = await profileModel.updateProfile(
             userId,
             { first_name: firstName, last_name: lastName, email, profile_pic: profilePic }

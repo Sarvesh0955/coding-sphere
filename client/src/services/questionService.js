@@ -128,21 +128,6 @@ const questionService = {
       console.error('Error fetching platforms:', error);
       throw error;
     }
-  },
-  
-  // Bulk create questions from JSON
-  bulkCreateQuestions: async (data) => {
-    try {
-      const response = await axios.post(
-        `${API_URL}/questions/bulk`,
-        data,
-        { headers: getAuthHeader() }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error bulk creating questions:', error);
-      throw error;
-    }
   }
 };
 

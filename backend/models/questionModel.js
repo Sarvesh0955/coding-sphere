@@ -79,7 +79,6 @@ const questionQueries = {
         }
     },
     
-    // Get a specific question
     getQuestionById: async (platformId, questionId) => {
         try {
             const query = `
@@ -107,7 +106,6 @@ const questionQueries = {
                 return null;
             }
             
-            // Combine topics from array and relation table for backward compatibility
             const row = result.rows[0];
             return {
                 ...row,
@@ -119,14 +117,12 @@ const questionQueries = {
         }
     },
     
-    // Create a new question
     createQuestion: async (platformId, questionId, title, link, topics, difficulty, companies = []) => {
         try {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
                 
-                // Insert into QUESTION table
                 const questionResult = await client.query(
                     `INSERT INTO QUESTION (platform_id, question_id, title, link, topics, difficulty)
                     VALUES ($1, $2, $3, $4, $5, $6)
@@ -134,10 +130,8 @@ const questionQueries = {
                     [platformId, questionId, title, link, topics, difficulty]
                 );
 
-                // If topics are provided, associate them with the question in QUESTION_TOPIC table
                 if (topics && topics.length > 0) {
                     for (const topicName of topics) {
-                        // Check if topic exists, if not create it
                         const topicResult = await client.query(
                             `SELECT topic_id FROM TOPICS WHERE topic_name = $1`,
                             [topicName]
@@ -145,7 +139,6 @@ const questionQueries = {
                         
                         let topicId;
                         if (topicResult.rows.length === 0) {
-                            // Create new topic
                             const newTopicResult = await client.query(
                                 `INSERT INTO TOPICS (topic_name) VALUES ($1) RETURNING topic_id`,
                                 [topicName]
@@ -155,7 +148,6 @@ const questionQueries = {
                             topicId = topicResult.rows[0].topic_id;
                         }
                         
-                        // Insert question-topic relationship
                         await client.query(
                             `INSERT INTO QUESTION_TOPIC (platform_id, question_id, topic_id)
                             VALUES ($1, $2, $3)
@@ -165,7 +157,6 @@ const questionQueries = {
                     }
                 }
 
-                // If companies are provided, associate them with the question
                 if (companies && companies.length > 0) {
                     for (const companyId of companies) {
                         await client.query(
@@ -191,107 +182,12 @@ const questionQueries = {
         }
     },
 
-    // Bulk create questions
-    bulkCreateQuestions: async (questions) => {
-        try {
-            const client = await pool.connect();
-            const createdQuestions = [];
-            
-            try {
-                await client.query('BEGIN');
-                
-                for (const question of questions) {
-                    const { platformId, questionId, title, link, topics, difficulty, companyId } = question;
-                    
-                    // Insert into QUESTION table
-                    const questionResult = await client.query(
-                        `INSERT INTO QUESTION (platform_id, question_id, title, link, topics, difficulty)
-                        VALUES ($1, $2, $3, $4, $5, $6)
-                        ON CONFLICT (platform_id, question_id) 
-                        DO UPDATE SET 
-                            title = EXCLUDED.title,
-                            link = EXCLUDED.link,
-                            topics = EXCLUDED.topics,
-                            difficulty = EXCLUDED.difficulty
-                        RETURNING *`,
-                        [platformId, questionId, title, link, topics, difficulty]
-                    );
-                    
-                    const createdQuestion = questionResult.rows[0];
-                    
-                    // If topics are provided, associate them with the question
-                    if (topics && topics.length > 0) {
-                        // Remove existing topic relationships first
-                        await client.query(
-                            `DELETE FROM QUESTION_TOPIC 
-                            WHERE platform_id = $1 AND question_id = $2`,
-                            [platformId, questionId]
-                        );
-                        
-                        for (const topicName of topics) {
-                            // Check if topic exists, if not create it
-                            const topicResult = await client.query(
-                                `SELECT topic_id FROM TOPICS WHERE topic_name = $1`,
-                                [topicName]
-                            );
-                            
-                            let topicId;
-                            if (topicResult.rows.length === 0) {
-                                // Create new topic
-                                const newTopicResult = await client.query(
-                                    `INSERT INTO TOPICS (topic_name) VALUES ($1) RETURNING topic_id`,
-                                    [topicName]
-                                );
-                                topicId = newTopicResult.rows[0].topic_id;
-                            } else {
-                                topicId = topicResult.rows[0].topic_id;
-                            }
-                            
-                            // Insert question-topic relationship
-                            await client.query(
-                                `INSERT INTO QUESTION_TOPIC (platform_id, question_id, topic_id)
-                                VALUES ($1, $2, $3)
-                                ON CONFLICT DO NOTHING`,
-                                [platformId, questionId, topicId]
-                            );
-                        }
-                    }
-                    
-                    // If companyId is provided, create company association
-                    if (companyId) {
-                        await client.query(
-                            `INSERT INTO QUESTION_COMPANY (platform_id, question_id, company_id)
-                            VALUES ($1, $2, $3)
-                            ON CONFLICT (platform_id, question_id, company_id) DO NOTHING`,
-                            [platformId, questionId, companyId]
-                        );
-                    }
-                    
-                    createdQuestions.push(createdQuestion);
-                }
-                
-                await client.query('COMMIT');
-                return createdQuestions;
-            } catch (err) {
-                await client.query('ROLLBACK');
-                throw err;
-            } finally {
-                client.release();
-            }
-        } catch (err) {
-            console.error('Error creating questions in bulk:', err);
-            throw err;
-        }
-    },
-    
-    // Update a question
     updateQuestion: async (platformId, questionId, title, link, topics, difficulty) => {
         try {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
                 
-                // Update the question
                 const result = await client.query(
                     `UPDATE QUESTION 
                     SET title = $3, link = $4, topics = $5, difficulty = $6
@@ -300,17 +196,14 @@ const questionQueries = {
                     [platformId, questionId, title, link, topics, difficulty]
                 );
                 
-                // Remove existing topic relationships
                 await client.query(
                     `DELETE FROM QUESTION_TOPIC 
                     WHERE platform_id = $1 AND question_id = $2`,
                     [platformId, questionId]
                 );
                 
-                // If topics are provided, re-associate them with the question
                 if (topics && topics.length > 0) {
                     for (const topicName of topics) {
-                        // Check if topic exists, if not create it
                         const topicResult = await client.query(
                             `SELECT topic_id FROM TOPICS WHERE topic_name = $1`,
                             [topicName]
@@ -318,7 +211,6 @@ const questionQueries = {
                         
                         let topicId;
                         if (topicResult.rows.length === 0) {
-                            // Create new topic
                             const newTopicResult = await client.query(
                                 `INSERT INTO TOPICS (topic_name) VALUES ($1) RETURNING topic_id`,
                                 [topicName]
@@ -328,7 +220,6 @@ const questionQueries = {
                             topicId = topicResult.rows[0].topic_id;
                         }
                         
-                        // Insert question-topic relationship
                         await client.query(
                             `INSERT INTO QUESTION_TOPIC (platform_id, question_id, topic_id)
                             VALUES ($1, $2, $3)
@@ -352,23 +243,18 @@ const questionQueries = {
         }
     },
     
-    // Delete a question
     deleteQuestion: async (platformId, questionId) => {
         try {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
                 
-                // Remove topic relationships
                 await client.query(
                     `DELETE FROM QUESTION_TOPIC 
                     WHERE platform_id = $1 AND question_id = $2`,
                     [platformId, questionId]    
                 );
                 
-                // The QUESTION_COMPANY relationships will be removed automatically via CASCADE
-                
-                // Delete the question
                 const result = await client.query(
                     'DELETE FROM QUESTION WHERE platform_id = $1 AND question_id = $2 RETURNING *',
                     [platformId, questionId]
@@ -388,7 +274,6 @@ const questionQueries = {
         }
     },
     
-    // Associate a question with a company
     addQuestionCompany: async (platformId, questionId, companyId) => {
         try {
             const result = await pool.query(
@@ -405,7 +290,6 @@ const questionQueries = {
         }
     },
     
-    // Remove a question's company association
     removeQuestionCompany: async (platformId, questionId, companyId) => {
         try {
             const result = await pool.query(
@@ -421,10 +305,8 @@ const questionQueries = {
         }
     },
     
-    // Get all topics from the database
     getAllTopics: async () => {
         try {
-            // Get topics from the TOPICS table
             const result = await pool.query(
                 `SELECT topic_name FROM TOPICS ORDER BY topic_name`
             );
@@ -435,14 +317,12 @@ const questionQueries = {
         }
     },
     
-    // Add a topic to a question
     addQuestionTopic: async (platformId, questionId, topicName) => {
         try {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
                 
-                // Check if topic exists, if not create it
                 const topicResult = await client.query(
                     `SELECT topic_id FROM TOPICS WHERE topic_name = $1`,
                     [topicName]
@@ -450,7 +330,6 @@ const questionQueries = {
                 
                 let topicId;
                 if (topicResult.rows.length === 0) {
-                    // Create new topic
                     const newTopicResult = await client.query(
                         `INSERT INTO TOPICS (topic_name) VALUES ($1) RETURNING topic_id`,
                         [topicName]
@@ -460,7 +339,6 @@ const questionQueries = {
                     topicId = topicResult.rows[0].topic_id;
                 }
                 
-                // Insert question-topic relationship
                 const result = await client.query(
                     `INSERT INTO QUESTION_TOPIC (platform_id, question_id, topic_id)
                     VALUES ($1, $2, $3)
@@ -469,7 +347,6 @@ const questionQueries = {
                     [platformId, questionId, topicId]
                 );
                 
-                // Update the topics array for backward compatibility
                 await client.query(
                     `UPDATE QUESTION 
                     SET topics = ARRAY(
@@ -496,28 +373,24 @@ const questionQueries = {
         }
     },
     
-    // Remove a question's topic association
     removeQuestionTopic: async (platformId, questionId, topicName) => {
         try {
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
                 
-                // Get topic ID from topic name
                 const topicResult = await client.query(
                     `SELECT topic_id FROM TOPICS WHERE topic_name = $1`,
                     [topicName]
                 );
                 
                 if (topicResult.rows.length === 0) {
-                    // Topic doesn't exist
                     await client.query('COMMIT');
                     return null;
                 }
                 
                 const topicId = topicResult.rows[0].topic_id;
                 
-                // Remove the relationship
                 const result = await client.query(
                     `DELETE FROM QUESTION_TOPIC 
                     WHERE platform_id = $1 AND question_id = $2 AND topic_id = $3
@@ -525,7 +398,6 @@ const questionQueries = {
                     [platformId, questionId, topicId]
                 );
                 
-                // Update the topics array for backward compatibility
                 await client.query(
                     `UPDATE QUESTION 
                     SET topics = ARRAY(
@@ -552,7 +424,6 @@ const questionQueries = {
         }
     },
     
-    // Get all companies
     getAllCompanies: async () => {
         try {
             const result = await pool.query('SELECT * FROM COMPANY ORDER BY company_name');
@@ -563,10 +434,8 @@ const questionQueries = {
         }
     },
     
-    // Create a new company
     createCompany: async (companyName) => {
         try {
-            // Check if the company already exists
             const existingCompany = await pool.query(
                 'SELECT * FROM COMPANY WHERE company_name = $1',
                 [companyName]
@@ -579,7 +448,6 @@ const questionQueries = {
                 };
             }
             
-            // Create a new company
             const result = await pool.query(
                 'INSERT INTO COMPANY (company_name) VALUES ($1) RETURNING *',
                 [companyName]

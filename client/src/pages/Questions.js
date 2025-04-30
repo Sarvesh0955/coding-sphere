@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Container, Typography, Box, TextField, Grid, Card, CardContent, 
+  Container, Typography, Box, TextField, Grid, 
   Button, Select, MenuItem, FormControl, InputLabel, Chip,
   Dialog, DialogActions, DialogContent, DialogTitle, 
-  FormControlLabel, Checkbox, IconButton, Divider,
   Paper, InputAdornment, CircularProgress, Alert,
-  Tooltip
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  TablePagination, Link, IconButton, Tooltip
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import LaunchIcon from '@mui/icons-material/Launch';
 import { useNavigate } from 'react-router-dom';
 import questionService from '../services/questionService';
 import { getUserFromToken, getToken } from '../services/authService';
@@ -323,6 +324,19 @@ const Questions = () => {
     }
   };
 
+  // Pagination
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
@@ -420,129 +434,133 @@ const Questions = () => {
         </Grid>
       </Paper>
       
-      {/* Questions List */}
+      {/* Questions List - Table View */}
       {loading ? (
         <Box display="flex" justifyContent="center" my={4}>
           <CircularProgress />
         </Box>
       ) : filteredQuestions.length > 0 ? (
-        <Grid container spacing={3}>
-          {filteredQuestions.map((question) => (
-            <Grid item xs={12} md={6} lg={4} key={`${question.platform_id}-${question.question_id}`}>
-              <Card 
-                elevation={3} 
-                sx={{ 
-                  height: '100%', 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  '&:hover': {
-                    boxShadow: 6
-                  }
-                }}
-              >
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Box 
-                    sx={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      mb: 1
-                    }}
-                  >
-                    <Typography 
-                      variant="h6" 
-                      component="h2" 
-                      gutterBottom
-                      sx={{ 
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        flexGrow: 1,
-                        mr: 1
-                      }}
+        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+          <TableContainer sx={{ maxHeight: 'calc(100vh - 300px)' }}>
+            <Table stickyHeader aria-label="coding questions table">
+              <TableHead>
+                <TableRow>
+                  <TableCell width="50%"><Typography variant="subtitle1" fontWeight="bold">Question</Typography></TableCell>
+                  <TableCell><Typography variant="subtitle1" fontWeight="bold">Platform</Typography></TableCell>
+                  <TableCell><Typography variant="subtitle1" fontWeight="bold">Difficulty</Typography></TableCell>
+                  <TableCell><Typography variant="subtitle1" fontWeight="bold">Topics</Typography></TableCell>
+                  <TableCell><Typography variant="subtitle1" fontWeight="bold">Companies</Typography></TableCell>
+                  <TableCell align="right"><Typography variant="subtitle1" fontWeight="bold">Actions</Typography></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredQuestions
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((question) => (
+                    <TableRow
+                      key={`${question.platform_id}-${question.question_id}`}
+                      sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
                     >
-                      {question.title}
-                    </Typography>
-                    
-                    <Chip 
-                      label={question.difficulty || 'Unknown'} 
-                      size="small"
-                      sx={{ 
-                        color: 'white',
-                        backgroundColor: getDifficultyColor(question.difficulty),
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  </Box>
-                  
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
-                    Platform: {question.platform_name}
-                  </Typography>
-                  
-                  {question.topics && question.topics.length > 0 && (
-                    <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {question.topics.map((topic) => (
+                      <TableCell>
+                        <Typography variant="body1" fontWeight="medium">
+                          {question.title}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{question.platform_name}</TableCell>
+                      <TableCell>
                         <Chip 
-                          key={topic} 
-                          label={topic} 
-                          size="small" 
-                          variant="outlined"
-                          color="primary"
-                          sx={{ mr: 0.5, mb: 0.5 }}
+                          label={question.difficulty || 'Unknown'} 
+                          size="small"
+                          sx={{ 
+                            color: 'white',
+                            backgroundColor: getDifficultyColor(question.difficulty),
+                            fontWeight: 'bold'
+                          }}
                         />
-                      ))}
-                    </Box>
-                  )}
-                  
-                  {question.companies && question.companies.length > 0 && (
-                    <Box sx={{ mt: 2 }}>
-                      <Typography variant="body2" color="textSecondary">
-                        Companies: {question.companies.join(', ')}
-                      </Typography>
-                    </Box>
-                  )}
-                </CardContent>
-                
-                <Box sx={{ p: 2, pt: 0, mt: 'auto' }}>
-                  {question.link && (
-                    <Button 
-                      variant="outlined" 
-                      color="primary" 
-                      href={question.link}
-                      target="_blank"
-                      sx={{ mr: 1 }}
-                    >
-                      Open
-                    </Button>
-                  )}
-                  
-                  {isAuthenticated && (
-                    <>
-                      <IconButton 
-                        size="small" 
-                        onClick={() => handleOpen('edit', question)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      {isAdmin && (
-                        <IconButton 
-                          size="small" 
-                          onClick={() => handleDelete(question)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      )}
-                    </>
-                  )}
-                </Box>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {question.topics && question.topics.length > 0 ? (
+                            question.topics.map((topic) => (
+                              <Chip 
+                                key={topic} 
+                                label={topic} 
+                                size="small" 
+                                variant="outlined"
+                                color="primary"
+                                sx={{ mr: 0.5, mb: 0.5 }}
+                              />
+                            ))
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">—</Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        {question.companies && question.companies.length > 0 ? (
+                          <Typography variant="body2">
+                            {question.companies.join(', ')}
+                          </Typography>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">—</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          {question.link && (
+                            <Tooltip title="Open question">
+                              <IconButton 
+                                size="small" 
+                                href={question.link}
+                                target="_blank"
+                                color="primary"
+                              >
+                                <LaunchIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          
+                          {isAdmin && (
+                            <>
+                              <Tooltip title="Edit question">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => handleOpen('edit', question)}
+                                  color="primary"
+                                  sx={{ ml: 1 }}
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete question">
+                                <IconButton 
+                                  size="small" 
+                                  onClick={() => handleDelete(question)}
+                                  color="error"
+                                  sx={{ ml: 1 }}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={filteredQuestions.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Paper>
       ) : (
         <Box textAlign="center" py={4}>
           <Typography variant="h6">No questions found matching your filters.</Typography>
