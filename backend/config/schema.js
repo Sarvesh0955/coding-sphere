@@ -19,6 +19,22 @@ const initDatabase = async () => {
     }
 };
 
+const initDatabasefunc = async () => {
+  try {
+      const client = await pool.connect();
+      
+      const schemaPath = path.join(__dirname, '..', 'models', 'function.sql');
+      const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+      
+      await client.query(schemaSql);
+      
+      console.log('Database initialized successfully');
+      client.release();
+  } catch (err) {
+      console.error('Error initializing database:', err);
+  }
+};
+
 const initSeedData = async () => {
     try {
       console.log('Initializing seed data...');
@@ -68,5 +84,6 @@ const ensureAdminExists = async () => {
 module.exports = {
     initDatabase,
     initSeedData,
-    ensureAdminExists
+    ensureAdminExists,
+    initDatabasefunc
 };
