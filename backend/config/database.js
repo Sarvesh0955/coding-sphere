@@ -2,10 +2,8 @@ const { Pool } = require('pg');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load environment variables
 dotenv.config();
 
-// PostgreSQL connection configuration
 const pool = new Pool({
     user: process.env.DB_USER || 'postgres',
     host: process.env.DB_HOST || 'localhost',
@@ -14,7 +12,6 @@ const pool = new Pool({
     port: process.env.DB_PORT || 5432,
 });
 
-// Test database connection
 const testConnection = () => {
     pool.connect((err, client, done) => {
         if (err) {

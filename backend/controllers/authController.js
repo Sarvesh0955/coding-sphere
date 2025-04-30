@@ -4,7 +4,6 @@ const profileModel = require('../models/profileModel');
 const emailService = require('../services/emailService');
 const { JWT_SECRET } = require('../middleware/auth');
 
-// User signup
 const signup = async (req, res) => {
     try {
         const { username, email, password, firstName, lastName, otp } = req.body;
@@ -18,13 +17,11 @@ const signup = async (req, res) => {
             return res.status(409).json({ message: 'User with this email already exists' });
         }
 
-        // Check if username is already taken
         const existingUsername = await profileModel.getProfileByUsername(username);
         if (existingUsername) {
             return res.status(409).json({ message: 'Username is already taken' });
         }
 
-        // Check if OTP is provided and verify it
         if (otp) {
             console.log(`Verifying OTP for signup: ${email}, ${otp}`);
             const otpResult = emailService.verifyOTP(email, otp, 'signup');
@@ -34,7 +31,6 @@ const signup = async (req, res) => {
             console.log(`OTP verification successful for ${email}`);
         } else {
             console.log(`No OTP provided for signup: ${email}`);
-            // Make OTP required
             return res.status(400).json({ message: 'Verification code is required' });
         }
         
@@ -48,8 +44,8 @@ const signup = async (req, res) => {
             email, 
             firstName || null, 
             lastName || null, 
-            null, // profile_pic
-            false // isAdmin
+            null, 
+            false 
         );
         
         const token = jwt.sign(
@@ -79,7 +75,6 @@ const signup = async (req, res) => {
     }
 };
 
-// User login
 const login = async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -88,7 +83,6 @@ const login = async (req, res) => {
             return res.status(400).json({ message: 'Username and password are required' });
         }
         
-        // Include password_hash for authentication
         const profile = await profileModel.getProfileByUsername(username, true);
         if (!profile) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -126,7 +120,6 @@ const login = async (req, res) => {
     }
 };
 
-// Send OTP for verification
 const sendVerificationOTP = async (req, res) => {
     try {
         const { email, purpose = 'verification' } = req.body;
@@ -135,7 +128,6 @@ const sendVerificationOTP = async (req, res) => {
             return res.status(400).json({ message: 'Email is required' });
         }
         
-        // Check if user exists when purpose is password reset
         if (purpose === 'reset-password') {
             const user = await profileModel.getProfileByEmail(email);
             if (!user) {
@@ -156,7 +148,6 @@ const sendVerificationOTP = async (req, res) => {
     }
 };
 
-// Verify OTP
 const verifyOTP = async (req, res) => {
     try {
         const { email, otp, purpose = 'verification' } = req.body;
@@ -165,7 +156,6 @@ const verifyOTP = async (req, res) => {
             return res.status(400).json({ message: 'Email and OTP are required' });
         }
         
-        // Check if user exists when purpose is password reset
         if (purpose === 'reset-password') {
             const user = await profileModel.getProfileByEmail(email);
             if (!user) {
@@ -186,7 +176,6 @@ const verifyOTP = async (req, res) => {
     }
 };
 
-// Reset password
 const resetPassword = async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
@@ -195,19 +184,16 @@ const resetPassword = async (req, res) => {
             return res.status(400).json({ message: 'Email, OTP and new password are required' });
         }
         
-        // Check if user exists with this email
         const user = await profileModel.getProfileByEmail(email);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
         
-        // Verify OTP
         const otpResult = emailService.verifyOTP(email, otp, 'reset-password');
         if (!otpResult.valid) {
             return res.status(400).json({ message: otpResult.message || 'Invalid or expired verification code' });
         }
         
-        // Hash new password and update
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
         
@@ -227,7 +213,6 @@ const resetPassword = async (req, res) => {
     }
 };
 
-// Check OTP status (debugging route)
 const checkOTP = (req, res) => {
     try {
         const email = req.params.email;
