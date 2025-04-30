@@ -67,7 +67,7 @@ const importQuestionsFromCSV = async (req, res) => {
                     continue;
                 }
 
-                let platformId = 1;
+                let platformId = 2;
                 
                 let questionId = '';
                 try {
