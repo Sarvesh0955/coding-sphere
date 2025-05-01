@@ -83,7 +83,6 @@ const ensureAdminExists = async () => {
 const init = async () => {
     await initDatabase();
     await initDatabasefunc();
-    await initDatabaseTriggers();
     await initSeedData();
     await ensureAdminExists();
 };
@@ -91,7 +90,6 @@ const init = async () => {
 module.exports = {
     initDatabase,
     initDatabasefunc,
-    initDatabaseTriggers,
     initSeedData,
     ensureAdminExists,
     init
