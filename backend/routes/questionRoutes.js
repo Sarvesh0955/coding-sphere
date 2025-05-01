@@ -17,4 +17,9 @@ router.delete('/:platformId/:questionId', auth.authenticateToken, questionContro
 router.post('/:platformId/:questionId/company/:companyId', auth.authenticateToken, questionController.addQuestionCompany);
 router.delete('/:platformId/:questionId/company/:companyId', auth.authenticateToken, questionController.removeQuestionCompany);
 
+// Solved questions routes
+router.get('/solved', auth.authenticateToken, questionController.getUserSolvedQuestions);
+router.post('/:platformId/:questionId/solved', auth.authenticateToken, questionController.markQuestionAsSolved);
+router.delete('/:platformId/:questionId/solved', auth.authenticateToken, questionController.markQuestionAsUnsolved);
+
 module.exports = router;

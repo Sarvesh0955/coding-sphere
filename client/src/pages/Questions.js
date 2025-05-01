@@ -5,7 +5,7 @@ import {
   Dialog, DialogActions, DialogContent, DialogTitle, 
   Paper, InputAdornment, CircularProgress, Alert,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TablePagination, Link, IconButton, Tooltip
+  TablePagination, Link, IconButton, Tooltip, Checkbox
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
@@ -13,6 +13,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import LaunchIcon from '@mui/icons-material/Launch';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useNavigate } from 'react-router-dom';
 import questionService from '../services/questionService';
 import { getUserFromToken, getToken } from '../services/authService';
@@ -32,6 +34,7 @@ const Questions = () => {
   const [topics, setTopics] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [platforms, setPlatforms] = useState([]);
+  const [showSolvedOnly, setShowSolvedOnly] = useState(false);
   
   // Add/Edit Question Dialog
   const [open, setOpen] = useState(false);
@@ -96,7 +99,7 @@ const Questions = () => {
     loadData();
   }, []);
   
-  // Filter questions based on search term, topic, and company
+  // Filter questions based on search term, topic, company, and solved status
   const filteredQuestions = questions.filter(question => {
     const matchesSearch = !searchTerm || 
       question.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,8 +110,10 @@ const Questions = () => {
       
     const matchesCompany = !selectedCompany || 
       (question.companies && question.companies.includes(selectedCompany));
+    
+    const matchesSolvedFilter = !showSolvedOnly || question.solved;
       
-    return matchesSearch && matchesTopic && matchesCompany;
+    return matchesSearch && matchesTopic && matchesCompany && matchesSolvedFilter;
   });
   
   // Handle filter changes
@@ -337,6 +342,42 @@ const Questions = () => {
     setPage(0);
   };
 
+  // Toggle solved status for a question
+  const handleToggleSolved = async (question) => {
+    if (!isAuthenticated) {
+      // If not authenticated, prompt to login
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      const { platform_id, question_id, solved } = question;
+      
+      if (solved) {
+        // If already solved, mark as unsolved
+        await questionService.markQuestionAsUnsolved(platform_id, question_id);
+      } else {
+        // If not solved, mark as solved
+        await questionService.markQuestionAsSolved(platform_id, question_id);
+      }
+      
+      // Update local state
+      setQuestions(prev => prev.map(q => 
+        q.platform_id === platform_id && q.question_id === question_id 
+          ? { ...q, solved: !solved } 
+          : q
+      ));
+    } catch (err) {
+      console.error('Error toggling solved status:', err);
+      setError('Failed to update solved status. Please try again.');
+    }
+  };
+  
+  // Toggle to show only solved questions
+  const handleToggleSolvedFilter = () => {
+    setShowSolvedOnly(!showSolvedOnly);
+  };
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom>
@@ -418,19 +459,32 @@ const Questions = () => {
             </Button>
           </Grid>
           
-          <Grid item xs={6} sm={1}>
-            {isAuthenticated && (
+          {isAuthenticated && (
+            <Grid item xs={6} sm={1}>
               <Button
                 fullWidth
+                variant={showSolvedOnly ? "contained" : "outlined"}
+                color="success"
+                onClick={handleToggleSolvedFilter}
+                startIcon={showSolvedOnly ? <CheckCircleIcon /> : <CheckCircleOutlineIcon />}
+              >
+                Solved
+              </Button>
+            </Grid>
+          )}
+          
+          {isAdmin && (
+            <Grid item xs={12} sm={12} textAlign="right">
+              <Button
                 variant="contained"
                 color="primary"
-                onClick={() => handleOpen('add')}
                 startIcon={<AddIcon />}
+                onClick={() => handleOpen('add')}
               >
-                Add
+                Add Question
               </Button>
-            )}
-          </Grid>
+            </Grid>
+          )}
         </Grid>
       </Paper>
       
@@ -445,6 +499,9 @@ const Questions = () => {
             <Table stickyHeader aria-label="coding questions table">
               <TableHead>
                 <TableRow>
+                  {isAuthenticated && (
+                    <TableCell width="60px"><Typography variant="subtitle1" fontWeight="bold">Solved</Typography></TableCell>
+                  )}
                   <TableCell width="50%"><Typography variant="subtitle1" fontWeight="bold">Question</Typography></TableCell>
                   <TableCell><Typography variant="subtitle1" fontWeight="bold">Platform</Typography></TableCell>
                   <TableCell><Typography variant="subtitle1" fontWeight="bold">Difficulty</Typography></TableCell>
@@ -461,6 +518,17 @@ const Questions = () => {
                       key={`${question.platform_id}-${question.question_id}`}
                       sx={{ '&:hover': { backgroundColor: 'action.hover' } }}
                     >
+                      {isAuthenticated && (
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            icon={<CheckCircleOutlineIcon />}
+                            checkedIcon={<CheckCircleIcon />}
+                            checked={!!question.solved}
+                            onChange={() => handleToggleSolved(question)}
+                            color="success"
+                          />
+                        </TableCell>
+                      )}
                       <TableCell>
                         <Typography variant="body1" fontWeight="medium">
                           {question.title}

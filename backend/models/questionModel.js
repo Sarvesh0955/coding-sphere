@@ -463,6 +463,98 @@ const questionQueries = {
         }
     },
     
+    getUserSolvedQuestions: async (username) => {
+        try {
+            const query = `
+                SELECT q.*, p.platform_name, s.solved_at,
+                    ARRAY(
+                        SELECT c.company_name 
+                        FROM QUESTION_COMPANY qc
+                        JOIN COMPANY c ON qc.company_id = c.company_id
+                        WHERE qc.platform_id = q.platform_id AND qc.question_id = q.question_id
+                    ) as companies,
+                    ARRAY(
+                        SELECT t.topic_name
+                        FROM QUESTION_TOPIC qt
+                        JOIN TOPICS t ON qt.topic_id = t.topic_id
+                        WHERE qt.platform_id = q.platform_id AND qt.question_id = q.question_id
+                    ) as topics_from_relation
+                FROM SOLVED s
+                JOIN QUESTION q ON s.platform_id = q.platform_id AND s.question_id = q.question_id
+                JOIN PLATFORM p ON q.platform_id = p.platform_id
+                WHERE s.username = $1
+                ORDER BY s.solved_at DESC
+            `;
+            
+            const result = await pool.query(query, [username]);
+            
+            return result.rows.map(row => ({
+                ...row,
+                topics: Array.from(new Set([...(row.topics || []), ...(row.topics_from_relation || [])]))
+            }));
+        } catch (err) {
+            console.error('Error getting solved questions:', err);
+            throw err;
+        }
+    },
+    
+    isQuestionSolved: async (username, platformId, questionId) => {
+        try {
+            const result = await pool.query(
+                `SELECT * FROM SOLVED
+                WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                [username, platformId, questionId]
+            );
+            return result.rows.length > 0;
+        } catch (err) {
+            console.error('Error checking if question is solved:', err);
+            throw err;
+        }
+    },
+    
+    markQuestionAsSolved: async (username, platformId, questionId) => {
+        try {
+            // Check if already solved
+            const existingResult = await pool.query(
+                `SELECT * FROM SOLVED
+                WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                [username, platformId, questionId]
+            );
+            
+            if (existingResult.rows.length > 0) {
+                return existingResult.rows[0]; // Already solved
+            }
+            
+            const result = await pool.query(
+                `INSERT INTO SOLVED (username, platform_id, question_id)
+                VALUES ($1, $2, $3)
+                RETURNING *`,
+                [username, platformId, questionId]
+            );
+            
+            return result.rows[0];
+        } catch (err) {
+            console.error('Error marking question as solved:', err);
+            throw err;
+        }
+    },
+    
+    markQuestionAsUnsolved: async (username, platformId, questionId) => {
+        try {
+            const result = await pool.query(
+                `DELETE FROM SOLVED
+                WHERE username = $1 AND platform_id = $2 AND question_id = $3
+                RETURNING *`,
+                [username, platformId, questionId]
+            );
+            
+            return result.rows.length > 0 ? result.rows[0] : null;
+        } catch (err) {
+            console.error('Error marking question as unsolved:', err);
+            throw err;
+        }
+    },
+    
     getAllPlatforms: async () => {
         return platformQueries.getAllPlatforms();
     }

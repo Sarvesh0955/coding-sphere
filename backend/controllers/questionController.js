@@ -14,7 +14,21 @@ const questionController = {
             };
             
             const questions = await questionModel.getAllQuestions(filters);
-            res.status(200).json(questions);
+            
+            // If user is authenticated, mark solved questions
+            let solvedQuestionIds = [];
+            if (req.user) {
+                const solvedQuestions = await questionModel.getUserSolvedQuestions(req.user.username);
+                solvedQuestionIds = solvedQuestions.map(q => `${q.platform_id}-${q.question_id}`);
+            }
+            
+            // Add solved status to each question
+            const questionsWithSolvedStatus = questions.map(q => ({
+                ...q,
+                solved: solvedQuestionIds.includes(`${q.platform_id}-${q.question_id}`)
+            }));
+            
+            res.status(200).json(questionsWithSolvedStatus);
         } catch (err) {
             console.error('Error in getAllQuestions controller:', err);
             res.status(500).json({ error: 'Failed to fetch questions' });
@@ -189,6 +203,62 @@ const questionController = {
         } catch (err) {
             console.error('Error in removeQuestionCompany controller:', err);
             res.status(500).json({ error: 'Failed to remove company association' });
+        }
+    },
+    
+    getUserSolvedQuestions: async (req, res) => {
+        try {
+            const solvedQuestions = await questionModel.getUserSolvedQuestions(req.user.username);
+            res.status(200).json(solvedQuestions);
+        } catch (err) {
+            console.error('Error in getUserSolvedQuestions controller:', err);
+            res.status(500).json({ error: 'Failed to fetch solved questions' });
+        }
+    },
+    
+    markQuestionAsSolved: async (req, res) => {
+        try {
+            const { platformId, questionId } = req.params;
+            
+            const result = await questionModel.markQuestionAsSolved(
+                req.user.username,
+                parseInt(platformId),
+                questionId
+            );
+            
+            res.status(200).json({ 
+                message: 'Question marked as solved',
+                solved: true,
+                result
+            });
+        } catch (err) {
+            console.error('Error in markQuestionAsSolved controller:', err);
+            res.status(500).json({ error: 'Failed to mark question as solved' });
+        }
+    },
+    
+    markQuestionAsUnsolved: async (req, res) => {
+        try {
+            const { platformId, questionId } = req.params;
+            
+            const result = await questionModel.markQuestionAsUnsolved(
+                req.user.username,
+                parseInt(platformId),
+                questionId
+            );
+            
+            if (!result) {
+                return res.status(404).json({ error: 'Question was not marked as solved' });
+            }
+            
+            res.status(200).json({ 
+                message: 'Question marked as unsolved',
+                solved: false,
+                result
+            });
+        } catch (err) {
+            console.error('Error in markQuestionAsUnsolved controller:', err);
+            res.status(500).json({ error: 'Failed to mark question as unsolved' });
         }
     }
 };

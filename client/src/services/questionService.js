@@ -19,7 +19,9 @@ const questionService = {
       });
 
       // Updated endpoint to match backend route
-      const response = await axios.get(`${API_URL}/questions/all?${params.toString()}`);
+      const response = await axios.get(`${API_URL}/questions/all?${params.toString()}`, 
+        { headers: getAuthHeader() }
+      );
       return response.data;
     } catch (error) {
       console.error('Error fetching questions:', error);
@@ -126,6 +128,49 @@ const questionService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching platforms:', error);
+      throw error;
+    }
+  },
+
+  // Get solved questions for the current user
+  getSolvedQuestions: async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/questions/solved`,
+        { headers: getAuthHeader() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching solved questions:', error);
+      throw error;
+    }
+  },
+  
+  // Mark a question as solved
+  markQuestionAsSolved: async (platformId, questionId) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/questions/${platformId}/${questionId}/solved`,
+        {},
+        { headers: getAuthHeader() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error marking question as solved:', error);
+      throw error;
+    }
+  },
+  
+  // Mark a question as unsolved (remove from solved)
+  markQuestionAsUnsolved: async (platformId, questionId) => {
+    try {
+      const response = await axios.delete(
+        `${API_URL}/questions/${platformId}/${questionId}/solved`,
+        { headers: getAuthHeader() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error marking question as unsolved:', error);
       throw error;
     }
   }
