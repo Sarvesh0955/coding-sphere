@@ -514,25 +514,44 @@ const questionQueries = {
     
     markQuestionAsSolved: async (username, platformId, questionId) => {
         try {
-            // Check if already solved
-            const existingResult = await pool.query(
-                `SELECT * FROM SOLVED
-                WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
-                [username, platformId, questionId]
-            );
-            
-            if (existingResult.rows.length > 0) {
-                return existingResult.rows[0]; // Already solved
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                
+                // Check if already solved
+                const existingResult = await client.query(
+                    `SELECT * FROM SOLVED
+                    WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                    [username, platformId, questionId]
+                );
+                
+                if (existingResult.rows.length > 0) {
+                    await client.query('COMMIT');
+                    return existingResult.rows[0]; // Already solved
+                }
+                
+                // Mark the question as solved
+                const result = await client.query(
+                    `INSERT INTO SOLVED (username, platform_id, question_id)
+                    VALUES ($1, $2, $3)
+                    RETURNING *`,
+                    [username, platformId, questionId]
+                );
+                
+                await client.query('COMMIT');
+                
+                // After committing the transaction, add the problem to the dynamic problemset of users who have this user as a friend
+                // We do this in a separate async call to avoid holding up the response
+                questionQueries.addProblemToFriendsDynamicProblemsets(username, platformId, questionId)
+                    .catch(err => console.error('Error adding problem to friends dynamic problemsets:', err));
+                
+                return result.rows[0];
+            } catch (err) {
+                await client.query('ROLLBACK');
+                throw err;
+            } finally {
+                client.release();
             }
-            
-            const result = await pool.query(
-                `INSERT INTO SOLVED (username, platform_id, question_id)
-                VALUES ($1, $2, $3)
-                RETURNING *`,
-                [username, platformId, questionId]
-            );
-            
-            return result.rows[0];
         } catch (err) {
             console.error('Error marking question as solved:', err);
             throw err;
@@ -592,27 +611,67 @@ const questionQueries = {
     
     addToDynamicProblemset: async (username, platformId, questionId) => {
         try {
-            // Check if the problem already exists in the dynamic problemset
-            const existingResult = await pool.query(
-                `SELECT * FROM DYNAMIC_PROBLEMS
-                WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
-                [username, platformId, questionId]
-            );
-            
-            if (existingResult.rows.length > 0) {
-                // Problem is already in the dynamic problemset
-                return existingResult.rows[0];
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                
+                // Check if the problem already exists in the dynamic problemset
+                const existingResult = await client.query(
+                    `SELECT * FROM DYNAMIC_PROBLEMS
+                    WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                    [username, platformId, questionId]
+                );
+                
+                if (existingResult.rows.length > 0) {
+                    // Problem is already in the dynamic problemset
+                    await client.query('COMMIT');
+                    return existingResult.rows[0];
+                }
+                
+                // Check the current count of questions in the dynamic problemset
+                const countResult = await client.query(
+                    `SELECT COUNT(*) as count FROM DYNAMIC_PROBLEMS WHERE username = $1`,
+                    [username]
+                );
+                
+                const count = parseInt(countResult.rows[0].count);
+                
+                // If count is already 10, delete the oldest question
+                if (count >= 10) {
+                    const oldestQuestionResult = await client.query(
+                        `SELECT * FROM DYNAMIC_PROBLEMS 
+                        WHERE username = $1 
+                        ORDER BY added_at ASC 
+                        LIMIT 1`,
+                        [username]
+                    );
+                    
+                    if (oldestQuestionResult.rows.length > 0) {
+                        const oldestQuestion = oldestQuestionResult.rows[0];
+                        await client.query(
+                            `DELETE FROM DYNAMIC_PROBLEMS 
+                            WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                            [username, oldestQuestion.platform_id, oldestQuestion.question_id]
+                        );
+                    }
+                }
+                
+                // Insert the new problem into the dynamic problemset
+                const result = await client.query(
+                    `INSERT INTO DYNAMIC_PROBLEMS (username, platform_id, question_id)
+                    VALUES ($1, $2, $3)
+                    RETURNING *`,
+                    [username, platformId, questionId]
+                );
+                
+                await client.query('COMMIT');
+                return result.rows[0];
+            } catch (err) {
+                await client.query('ROLLBACK');
+                throw err;
+            } finally {
+                client.release();
             }
-            
-            // Insert the problem into the dynamic problemset
-            const result = await pool.query(
-                `INSERT INTO DYNAMIC_PROBLEMS (username, platform_id, question_id)
-                VALUES ($1, $2, $3)
-                RETURNING *`,
-                [username, platformId, questionId]
-            );
-            
-            return result.rows[0];
         } catch (err) {
             console.error('Error adding to dynamic problemset:', err);
             throw err;
@@ -813,6 +872,97 @@ const questionQueries = {
         }
     },
     
+    // Helper function to add a problem to dynamic problemset of users who have the solving user as friend
+    addProblemToFriendsDynamicProblemsets: async (solverUsername, platformId, questionId) => {
+        try {
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+                
+                // Find all users who have the solver as a friend
+                const usersResult = await client.query(
+                    `SELECT username FROM FRIENDS WHERE friend_username = $1`,
+                    [solverUsername]
+                );
+                
+                // For each user, add the problem to their dynamic problemset if they haven't solved it already
+                for (const userRow of usersResult.rows) {
+                    const username = userRow.username;
+                    
+                    // Check if user has already solved the problem
+                    const isSolvedResult = await client.query(
+                        `SELECT 1 FROM SOLVED 
+                        WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                        [username, platformId, questionId]
+                    );
+                    
+                    if (isSolvedResult.rows.length > 0) {
+                        // Skip if user has already solved the problem
+                        continue;
+                    }
+                    
+                    // Check if the problem is already in the user's dynamic problemset
+                    const existsInProblemsetResult = await client.query(
+                        `SELECT 1 FROM DYNAMIC_PROBLEMS 
+                        WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                        [username, platformId, questionId]
+                    );
+                    
+                    if (existsInProblemsetResult.rows.length > 0) {
+                        // Skip if problem is already in the dynamic problemset
+                        continue;
+                    }
+                    
+                    // Check the current count of questions in the dynamic problemset
+                    const countResult = await client.query(
+                        `SELECT COUNT(*) as count FROM DYNAMIC_PROBLEMS WHERE username = $1`,
+                        [username]
+                    );
+                    
+                    const count = parseInt(countResult.rows[0].count);
+                    
+                    // If count is already 10, delete the oldest question
+                    if (count >= 10) {
+                        const oldestQuestionResult = await client.query(
+                            `SELECT * FROM DYNAMIC_PROBLEMS 
+                            WHERE username = $1 
+                            ORDER BY added_at ASC 
+                            LIMIT 1`,
+                            [username]
+                        );
+                        
+                        if (oldestQuestionResult.rows.length > 0) {
+                            const oldestQuestion = oldestQuestionResult.rows[0];
+                            await client.query(
+                                `DELETE FROM DYNAMIC_PROBLEMS 
+                                WHERE username = $1 AND platform_id = $2 AND question_id = $3`,
+                                [username, oldestQuestion.platform_id, oldestQuestion.question_id]
+                            );
+                        }
+                    }
+                    
+                    // Add the problem to the user's dynamic problemset
+                    await client.query(
+                        `INSERT INTO DYNAMIC_PROBLEMS (username, platform_id, question_id)
+                        VALUES ($1, $2, $3)`,
+                        [username, platformId, questionId]
+                    );
+                }
+                
+                await client.query('COMMIT');
+                return { success: true };
+            } catch (err) {
+                await client.query('ROLLBACK');
+                throw err;
+            } finally {
+                client.release();
+            }
+        } catch (err) {
+            console.error('Error adding problem to friends dynamic problemsets:', err);
+            throw err;
+        }
+    },
+
     getAllPlatforms: async () => {
         return platformQueries.getAllPlatforms();
     }
