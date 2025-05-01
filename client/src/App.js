@@ -11,6 +11,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import Questions from './pages/Questions';
 import Home from './pages/Home';
+import Friends from './pages/Friends';
 import { getToken, getUserFromToken } from './services/authService';
 
 function App() {
@@ -57,6 +58,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Profile user={user} />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/friends" 
+            element={
+              <ProtectedRoute>
+                <Friends />
               </ProtectedRoute>
             } 
           />

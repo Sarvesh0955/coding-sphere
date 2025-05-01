@@ -279,6 +279,112 @@ const updateProfile = async (req, res) => {
     }
 };
 
+// Search for users by username or name
+const searchUsers = async (req, res) => {
+    try {
+        const { searchTerm } = req.query;
+        
+        let users;
+        // If searchTerm is empty, return all users (except current user)
+        if (!searchTerm || searchTerm.trim().length === 0) {
+            users = await profileModel.getAllProfiles();
+            // Filter out the current user
+            users = users.filter(user => user.username !== req.user.username);
+        } else {
+            users = await profileModel.searchUsers(searchTerm, req.user.username);
+        }
+        
+        // For each user, check if they are already friends with the current user
+        const usersWithFriendshipStatus = await Promise.all(users.map(async (user) => {
+            const isFriend = await profileModel.checkFriendship(req.user.username, user.username);
+            return {
+                ...user,
+                isFriend
+            };
+        }));
+        
+        res.status(200).json({ users: usersWithFriendshipStatus });
+    } catch (err) {
+        console.error('Error searching users:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Add a friend
+const addFriend = async (req, res) => {
+    try {
+        const { friendUsername } = req.params;
+        
+        if (!friendUsername) {
+            return res.status(400).json({ message: 'Friend username is required' });
+        }
+        
+        // Check if the friend exists
+        const friendProfile = await profileModel.getProfileByUsername(friendUsername);
+        if (!friendProfile) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        
+        // Check if they're already friends
+        const alreadyFriends = await profileModel.checkFriendship(req.user.username, friendUsername);
+        if (alreadyFriends) {
+            return res.status(400).json({ message: 'Already friends with this user' });
+        }
+        
+        // Add the friendship
+        await profileModel.addFriend(req.user.username, friendUsername);
+        
+        res.status(200).json({ 
+            message: 'Friend added successfully',
+            friend: {
+                username: friendProfile.username,
+                firstName: friendProfile.first_name,
+                lastName: friendProfile.last_name,
+                profilePic: friendProfile.profile_pic
+            }
+        });
+    } catch (err) {
+        console.error('Error adding friend:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Remove a friend
+const removeFriend = async (req, res) => {
+    try {
+        const { friendUsername } = req.params;
+        
+        if (!friendUsername) {
+            return res.status(400).json({ message: 'Friend username is required' });
+        }
+        
+        // Check if they're friends
+        const areFriends = await profileModel.checkFriendship(req.user.username, friendUsername);
+        if (!areFriends) {
+            return res.status(400).json({ message: 'Not friends with this user' });
+        }
+        
+        // Remove the friendship
+        await profileModel.removeFriend(req.user.username, friendUsername);
+        
+        res.status(200).json({ message: 'Friend removed successfully' });
+    } catch (err) {
+        console.error('Error removing friend:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// Get all friends
+const getUserFriends = async (req, res) => {
+    try {
+        const friends = await profileModel.getUserFriends(req.user.username);
+        res.status(200).json({ friends });
+    } catch (err) {
+        console.error('Error getting user friends:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getProfile,
     getPlatforms,
@@ -290,5 +396,9 @@ module.exports = {
     getCodeforcesStats,
     getLeetcodeStats,
     getCombinedStats,
-    updateProfile
+    updateProfile,
+    searchUsers,
+    addFriend,
+    removeFriend,
+    getUserFriends
 };

@@ -35,6 +35,11 @@ const Navbar = ({ user, setUser }) => {
                 <li className="nav-item">
                   <Link className="nav-link" to="/profile">Profile</Link>
                 </li>
+                <li className="nav-item">
+                  <Link className="nav-link" to="/friends">
+                    <i className="fas fa-user-friends me-1"></i> Friends
+                  </Link>
+                </li>
                 <li className="nav-item dropdown">
                   <a className="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i className="fas fa-chart-line me-1"></i> Coding Dashboards
