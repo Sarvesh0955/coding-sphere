@@ -173,6 +173,64 @@ const questionService = {
       console.error('Error marking question as unsolved:', error);
       throw error;
     }
+  },
+  
+  // Get the dynamic problemset for the current user
+  getDynamicProblemset: async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/questions/dynamic-problemset`,
+        { headers: getAuthHeader() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dynamic problemset:', error);
+      throw error;
+    }
+  },
+  
+  // Manually refresh the dynamic problemset
+  refreshDynamicProblemset: async () => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/questions/dynamic-problemset/refresh`,
+        {},
+        { headers: getAuthHeader() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error refreshing dynamic problemset:', error);
+      throw error;
+    }
+  },
+  
+  // Add a question to the dynamic problemset
+  addToDynamicProblemset: async (platformId, questionId) => {
+    try {
+      const response = await axios.post(
+        `${API_URL}/questions/${platformId}/${questionId}/dynamic-problemset`,
+        {},
+        { headers: getAuthHeader() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error adding question to dynamic problemset:', error);
+      throw error;
+    }
+  },
+  
+  // Remove a question from the dynamic problemset
+  removeFromDynamicProblemset: async (platformId, questionId) => {
+    try {
+      const response = await axios.delete(
+        `${API_URL}/questions/${platformId}/${questionId}/dynamic-problemset`,
+        { headers: getAuthHeader() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error removing question from dynamic problemset:', error);
+      throw error;
+    }
   }
 };
 

@@ -373,6 +373,40 @@ const Questions = () => {
     }
   };
   
+  // Add question to dynamic problemset
+  const handleAddToDynamicProblemset = async (question) => {
+    if (!isAuthenticated) {
+      // If not authenticated, prompt to login
+      navigate('/login');
+      return;
+    }
+    
+    try {
+      const { platform_id, question_id } = question;
+      await questionService.addToDynamicProblemset(platform_id, question_id);
+      
+      // Show success message
+      setError(null);
+      const tempElement = document.createElement('div');
+      tempElement.innerHTML = `<div class="alert alert-success" role="alert">
+        Question "${question.title}" added to your dynamic problemset.
+      </div>`;
+      
+      const successAlert = tempElement.firstChild;
+      document.querySelector('.container').prepend(successAlert);
+      
+      // Remove the alert after 3 seconds
+      setTimeout(() => {
+        if (successAlert.parentNode) {
+          successAlert.parentNode.removeChild(successAlert);
+        }
+      }, 3000);
+    } catch (err) {
+      console.error('Error adding question to dynamic problemset:', err);
+      setError('Failed to add question to dynamic problemset. Please try again.');
+    }
+  };
+  
   // Toggle to show only solved questions
   const handleToggleSolvedFilter = () => {
     setShowSolvedOnly(!showSolvedOnly);
@@ -584,6 +618,19 @@ const Questions = () => {
                                 color="primary"
                               >
                                 <LaunchIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          
+                          {isAuthenticated && (
+                            <Tooltip title="Add to dynamic problemset">
+                              <IconButton 
+                                size="small" 
+                                onClick={() => handleAddToDynamicProblemset(question)}
+                                color="primary"
+                                sx={{ ml: 1 }}
+                              >
+                                <AddIcon />
                               </IconButton>
                             </Tooltip>
                           )}

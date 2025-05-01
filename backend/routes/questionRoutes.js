@@ -22,4 +22,10 @@ router.get('/solved', auth.authenticateToken, questionController.getUserSolvedQu
 router.post('/:platformId/:questionId/solved', auth.authenticateToken, questionController.markQuestionAsSolved);
 router.delete('/:platformId/:questionId/solved', auth.authenticateToken, questionController.markQuestionAsUnsolved);
 
+// Dynamic problemset routes
+router.get('/dynamic-problemset', auth.authenticateToken, questionController.getDynamicProblemset);
+router.post('/dynamic-problemset/refresh', auth.authenticateToken, questionController.refreshDynamicProblemset);
+router.post('/:platformId/:questionId/dynamic-problemset', auth.authenticateToken, questionController.addToDynamicProblemset);
+router.delete('/:platformId/:questionId/dynamic-problemset', auth.authenticateToken, questionController.removeFromDynamicProblemset);
+
 module.exports = router;

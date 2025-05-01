@@ -33,6 +33,11 @@ const Navbar = ({ user, setUser }) => {
             {user && (
               <>
                 <li className="nav-item">
+                  <Link className="nav-link" to="/dynamic-problemset">
+                    <i className="fas fa-list-alt me-1"></i> Dynamic Problemset
+                  </Link>
+                </li>
+                <li className="nav-item">
                   <Link className="nav-link" to="/profile">Profile</Link>
                 </li>
                 <li className="nav-item">

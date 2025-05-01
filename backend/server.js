@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { pool, testConnection } = require('./config/database');
-const { initDatabase: initSchema, initSeedData: initSeed, ensureAdminExists,initDatabasefunc } = require('./config/schema');
+const { init } = require('./config/schema');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -28,11 +28,7 @@ app.use(express.json());
 
 // Initialize database with schema
 const setupDatabase = async () => {
-  await initSchema();
-  testConnection();
-  await initSeed(); 
-  await initDatabasefunc();
-  await ensureAdminExists(); 
+  await init();
 };
 
 // Run database setup

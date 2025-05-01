@@ -260,6 +260,91 @@ const questionController = {
             console.error('Error in markQuestionAsUnsolved controller:', err);
             res.status(500).json({ error: 'Failed to mark question as unsolved' });
         }
+    },
+    
+    getDynamicProblemset: async (req, res) => {
+        try {
+            const username = req.user.username;
+            
+            // Check if the dynamic problemset needs to be refreshed
+            const result = await questionModel.refreshDynamicProblemset(username);
+            
+            // Get the dynamic problemset
+            const dynamicProblemset = await questionModel.getDynamicProblemset(username);
+            
+            // Get the user's solved questions
+            const solvedQuestions = await questionModel.getUserSolvedQuestions(username);
+            const solvedQuestionIds = solvedQuestions.map(q => `${q.platform_id}-${q.question_id}`);
+            
+            // Add solved status to each question
+            const problemsetWithSolvedStatus = dynamicProblemset.map(q => ({
+                ...q,
+                solved: solvedQuestionIds.includes(`${q.platform_id}-${q.question_id}`)
+            }));
+            
+            res.status(200).json({
+                problemset: problemsetWithSolvedStatus,
+                refreshResult: result
+            });
+        } catch (err) {
+            console.error('Error in getDynamicProblemset controller:', err);
+            res.status(500).json({ error: 'Failed to fetch dynamic problemset' });
+        }
+    },
+    
+    refreshDynamicProblemset: async (req, res) => {
+        try {
+            const username = req.user.username;
+            
+            // Refresh the dynamic problemset
+            const result = await questionModel.refreshDynamicProblemset(username);
+            
+            res.status(200).json({ 
+                message: 'Dynamic problemset refreshed successfully',
+                result 
+            });
+        } catch (err) {
+            console.error('Error in refreshDynamicProblemset controller:', err);
+            res.status(500).json({ error: 'Failed to refresh dynamic problemset' });
+        }
+    },
+    
+    addToDynamicProblemset: async (req, res) => {
+        try {
+            const { platformId, questionId } = req.params;
+            const username = req.user.username;
+            
+            const result = await questionModel.addToDynamicProblemset(username, parseInt(platformId), questionId);
+            
+            res.status(200).json({ 
+                message: 'Question added to dynamic problemset successfully',
+                result
+            });
+        } catch (err) {
+            console.error('Error in addToDynamicProblemset controller:', err);
+            res.status(500).json({ error: 'Failed to add question to dynamic problemset' });
+        }
+    },
+    
+    removeFromDynamicProblemset: async (req, res) => {
+        try {
+            const { platformId, questionId } = req.params;
+            const username = req.user.username;
+            
+            const result = await questionModel.removeFromDynamicProblemset(username, parseInt(platformId), questionId);
+            
+            if (!result) {
+                return res.status(404).json({ error: 'Question not found in dynamic problemset' });
+            }
+            
+            res.status(200).json({ 
+                message: 'Question removed from dynamic problemset successfully',
+                result
+            });
+        } catch (err) {
+            console.error('Error in removeFromDynamicProblemset controller:', err);
+            res.status(500).json({ error: 'Failed to remove question from dynamic problemset' });
+        }
     }
 };
 

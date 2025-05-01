@@ -10,6 +10,7 @@ import LeetCodeDashboard from './pages/LeetCodeDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import Questions from './pages/Questions';
+import DynamicProblemset from './pages/DynamicProblemset';
 import Home from './pages/Home';
 import Friends from './pages/Friends';
 import { getToken, getUserFromToken } from './services/authService';
@@ -53,6 +54,14 @@ function App() {
           <Route path="/signup" element={<Signup setUser={setUser} />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/questions" element={<Questions />} />
+          <Route 
+            path="/dynamic-problemset" 
+            element={
+              <ProtectedRoute>
+                <DynamicProblemset />
+              </ProtectedRoute>
+            } 
+          />
           <Route 
             path="/profile" 
             element={
