@@ -14,6 +14,12 @@ router.delete('/accounts/:platformId', authenticateToken, profileController.dele
 router.get('/admin/profiles', authenticateToken, isAdmin, profileController.getAllProfiles);
 router.get('/admin/all', authenticateToken, isAdmin, profileController.getAllProfiles);
 
+// Friend routes
+router.get('/search', authenticateToken, profileController.searchUsers);
+router.get('/friends', authenticateToken, profileController.getUserFriends);
+router.post('/friends/:friendUsername', authenticateToken, profileController.addFriend);
+router.delete('/friends/:friendUsername', authenticateToken, profileController.removeFriend);
+
 router.get('/codeforces/:username', profileController.getCodeforcesStats);
 router.get('/leetcode/:username', profileController.getLeetcodeStats);
 router.get('/combined/:userId', authenticateToken, profileController.getCombinedStats);

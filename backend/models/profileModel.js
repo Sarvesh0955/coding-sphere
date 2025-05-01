@@ -150,9 +150,93 @@ const profileQueries = {
             console.error('Error deleting user account:', err);
             throw err;
         }
+    },
+    
+    // Search users by username or name
+    searchUsers: async (searchTerm, currentUsername) => {
+        try {
+            // Search with ILIKE for case-insensitive partial matches on username, first_name, or last_name
+            // Exclude the current user from the search results
+            const result = await pool.query(
+                `SELECT username, first_name, last_name, profile_pic 
+                FROM PROFILES 
+                WHERE username != $1 
+                AND (
+                    username ILIKE $2 
+                    OR first_name ILIKE $2 
+                    OR last_name ILIKE $2
+                    OR CONCAT(first_name, ' ', last_name) ILIKE $2
+                )
+                ORDER BY username
+                LIMIT 20`,
+                [currentUsername, `%${searchTerm}%`]
+            );
+            return result.rows;
+        } catch (err) {
+            console.error('Error searching users:', err);
+            throw err;
+        }
+    },
+    
+    // Add a friend relationship
+    addFriend: async (username, friendUsername) => {
+        try {
+            await pool.query(
+                'INSERT INTO FRIENDS (username, friend_username) VALUES ($1, $2)',
+                [username, friendUsername]
+            );
+            return true;
+        } catch (err) {
+            console.error('Error adding friend:', err);
+            throw err;
+        }
+    },
+    
+    // Remove a friend relationship
+    removeFriend: async (username, friendUsername) => {
+        try {
+            await pool.query(
+                'DELETE FROM FRIENDS WHERE username = $1 AND friend_username = $2',
+                [username, friendUsername]
+            );
+            return true;
+        } catch (err) {
+            console.error('Error removing friend:', err);
+            throw err;
+        }
+    },
+    
+    // Get all friends of a user
+    getUserFriends: async (username) => {
+        try {
+            const result = await pool.query(
+                `SELECT p.username, p.first_name, p.last_name, p.profile_pic
+                FROM FRIENDS f
+                JOIN PROFILES p ON f.friend_username = p.username
+                WHERE f.username = $1
+                ORDER BY p.username`,
+                [username]
+            );
+            return result.rows;
+        } catch (err) {
+            console.error('Error getting user friends:', err);
+            throw err;
+        }
+    },
+    
+    // Check if users are friends
+    checkFriendship: async (username, friendUsername) => {
+        try {
+            const result = await pool.query(
+                'SELECT * FROM FRIENDS WHERE username = $1 AND friend_username = $2',
+                [username, friendUsername]
+            );
+            return result.rows.length > 0;
+        } catch (err) {
+            console.error('Error checking friendship:', err);
+            throw err;
+        }
     }
-    
-    
 };
 
 module.exports = profileQueries;

@@ -77,12 +77,97 @@ export const deleteUserAccount = async (platformId) => {
   }
 };
 
+// Function to get the authenticated user profile
+export const getProfile = async () => {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(`${API_URL}/profile`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Function to update profile
+export const updateProfile = async (username, profileData) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.put(`${API_URL}/profile/${username}`, profileData, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Function to get platforms
+export const getPlatforms = async () => {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(`${API_URL}/profile/platforms`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Function to search for users
+export const searchUsers = async (searchTerm) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(`${API_URL}/profile/search`, {
+    params: { searchTerm },
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Function to get current user's friends
+export const getUserFriends = async () => {
+  const token = localStorage.getItem('token');
+  const response = await axios.get(`${API_URL}/profile/friends`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Function to add a friend
+export const addFriend = async (friendUsername) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.post(`${API_URL}/profile/friends/${friendUsername}`, {}, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Function to remove a friend
+export const removeFriend = async (friendUsername) => {
+  const token = localStorage.getItem('token');
+  const response = await axios.delete(`${API_URL}/profile/friends/${friendUsername}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
 const profileService = {
   getAllPlatforms,
   getUserAccounts,
   addUserAccount,
   updateUserAccount,
-  deleteUserAccount
+  deleteUserAccount,
+  getProfile,
+  updateProfile,
+  getPlatforms,
+  searchUsers,
+  getUserFriends,
+  addFriend,
+  removeFriend
 };
 
 export default profileService;

@@ -17,4 +17,15 @@ router.delete('/:platformId/:questionId', auth.authenticateToken, questionContro
 router.post('/:platformId/:questionId/company/:companyId', auth.authenticateToken, questionController.addQuestionCompany);
 router.delete('/:platformId/:questionId/company/:companyId', auth.authenticateToken, questionController.removeQuestionCompany);
 
+// Solved questions routes
+router.get('/solved', auth.authenticateToken, questionController.getUserSolvedQuestions);
+router.post('/:platformId/:questionId/solved', auth.authenticateToken, questionController.markQuestionAsSolved);
+router.delete('/:platformId/:questionId/solved', auth.authenticateToken, questionController.markQuestionAsUnsolved);
+
+// Dynamic problemset routes
+router.get('/dynamic-problemset', auth.authenticateToken, questionController.getDynamicProblemset);
+router.post('/dynamic-problemset/refresh', auth.authenticateToken, questionController.refreshDynamicProblemset);
+router.post('/:platformId/:questionId/dynamic-problemset', auth.authenticateToken, questionController.addToDynamicProblemset);
+router.delete('/:platformId/:questionId/dynamic-problemset', auth.authenticateToken, questionController.removeFromDynamicProblemset);
+
 module.exports = router;
