@@ -11,6 +11,10 @@ const Navbar = ({ user, setUser }) => {
     navigate('/login');
   };
 
+  const handleDuelRedirect = () => {
+    window.location.href = 'http://localhost:4000/play';
+  };
+
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
       <div className="container">
@@ -44,6 +48,15 @@ const Navbar = ({ user, setUser }) => {
                   <Link className="nav-link" to="/friends">
                     <i className="fas fa-user-friends me-1"></i> Friends
                   </Link>
+                </li>
+                <li className="nav-item">
+                  <button 
+                    className="nav-link btn btn-link" 
+                    onClick={handleDuelRedirect}
+                    style={{ background: 'none', border: 'none' }}
+                  >
+                    <i className="fas fa-gamepad me-1"></i> Duel
+                  </button>
                 </li>
                 <li className="nav-item dropdown">
                   <a className="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
