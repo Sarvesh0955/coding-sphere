@@ -3,13 +3,10 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-<<<<<<< HEAD
-const { pool, testConnection, createTrigger } = require('./config/database');
+const { pool, testConnection} = require('./config/database');
 const { initDatabase: initSchema, initSeedData: initSeed, ensureAdminExists,initDatabasefunc } = require('./config/schema');
-=======
 const { pool, testConnection } = require('./config/database');
 const { init } = require('./config/schema');
->>>>>>> 4db3d137f959ef11d426b18d60918472aa51346a
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -33,17 +30,12 @@ app.use(express.json());
 
 // Initialize database with schema
 const setupDatabase = async () => {
-<<<<<<< HEAD
   await initSchema();
   testConnection();
-  await createTrigger();
-  console.log('Database schema Trigger.');
   await initSeed(); 
   await initDatabasefunc();
   await ensureAdminExists(); 
-=======
   await init();
->>>>>>> 4db3d137f959ef11d426b18d60918472aa51346a
 };
 
 // Run database setup
