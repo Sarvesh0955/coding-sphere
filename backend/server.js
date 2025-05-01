@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { pool, testConnection } = require('./config/database');
+const { pool, testConnection, createTrigger } = require('./config/database');
 const { initDatabase: initSchema, initSeedData: initSeed, ensureAdminExists,initDatabasefunc } = require('./config/schema');
 
 // Import routes
@@ -30,6 +30,8 @@ app.use(express.json());
 const setupDatabase = async () => {
   await initSchema();
   testConnection();
+  await createTrigger();
+  console.log('Database schema Trigger.');
   await initSeed(); 
   await initDatabasefunc();
   await ensureAdminExists(); 

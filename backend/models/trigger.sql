@@ -13,17 +13,18 @@ CREATE TRIGGER prevent_admin_delete
     FOR EACH ROW
     EXECUTE FUNCTION prevent_admin_deletion();
 
-CREATE OR REPLACE FUNCTION check_password_update()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.password_hash = OLD.password_hash THEN
-        RAISE EXCEPTION 'New password cannot be the same as the old password';
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- CREATE OR REPLACE FUNCTION check_password_update()
+-- RETURNS TRIGGER AS $$
+-- BEGIN
+--     IF NEW.password_hash = OLD.password_hash THEN
+--         RAISE EXCEPTION 'New password cannot be the same as the old password';
+--     END IF;
+--     RETURN NEW;
+-- END;
+-- $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER before_password_update
-BEFORE UPDATE OF password_hash ON PROFILES
-FOR EACH ROW
-EXECUTE FUNCTION check_password_update();
+-- CREATE TRIGGER before_password_update
+-- BEFORE UPDATE OF password_hash ON PROFILES
+-- FOR EACH ROW
+-- EXECUTE FUNCTION check_password_update();
+

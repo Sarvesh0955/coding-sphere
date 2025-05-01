@@ -12,7 +12,7 @@ const questionController = {
                 companyId: req.query.companyId ? parseInt(req.query.companyId) : null,
                 platformId: req.query.platformId ? parseInt(req.query.platformId) : null
             };
-            
+   
             const questions = await questionModel.getAllQuestions(filters);
             res.status(200).json(questions);
         } catch (err) {

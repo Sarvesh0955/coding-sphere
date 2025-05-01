@@ -111,7 +111,6 @@ END;
 $$;
 
 -- 2
-
 CREATE OR REPLACE FUNCTION get_profile_by_email(p_email VARCHAR)
 RETURNS TABLE (
     username VARCHAR,
@@ -175,3 +174,31 @@ BEGIN
         is_admin;
 END;
 $$ LANGUAGE plpgsql;
+
+-- First drop existing trigger and function if they exist
+DROP TRIGGER IF EXISTS before_password_update ON PROFILES;
+DROP FUNCTION IF EXISTS check_password_update();
+
+-- Create the trigger function with more robust checking
+CREATE OR REPLACE FUNCTION check_password_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Use IS NOT DISTINCT FROM for better NULL handling
+    IF NEW.password_hash IS NOT DISTINCT FROM OLD.password_hash THEN
+        RAISE EXCEPTION 'New password cannot be the same as the old password';
+    END IF;
+    
+    -- Additional validation
+    IF NEW.password_hash IS NULL OR NEW.password_hash = '' THEN
+        RAISE EXCEPTION 'Password hash cannot be empty';
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE TRIGGER before_password_update
+    BEFORE UPDATE OF password_hash ON PROFILES
+    FOR EACH ROW
+    EXECUTE FUNCTION check_password_update();

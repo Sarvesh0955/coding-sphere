@@ -23,7 +23,49 @@ const testConnection = () => {
     });
 };
 
+const createTrigger = async () => {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+        DROP TRIGGER IF EXISTS before_password_update ON PROFILES;
+        DROP FUNCTION IF EXISTS check_password_update();
+    `);
+
+    await client.query(`
+      CREATE OR REPLACE FUNCTION check_password_update()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        -- Use IS NOT DISTINCT FROM for better NULL handling
+        IF NEW.password_hash IS NOT DISTINCT FROM OLD.password_hash THEN
+            RAISE EXCEPTION 'New password cannot be the same as the old password';
+        END IF;
+        
+        -- Additional validation
+        IF NEW.password_hash IS NULL OR NEW.password_hash = '' THEN
+            RAISE EXCEPTION 'Password hash cannot be empty';
+        END IF;
+        
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+    `);
+    await client.query(`
+        CREATE TRIGGER before_password_update
+        BEFORE UPDATE OF password_hash ON PROFILES
+        FOR EACH ROW
+        EXECUTE FUNCTION check_password_update();
+    `);
+
+    console.log("Trigger created successfully.");
+  } catch (err) {
+    console.error("Error creating trigger:", err);
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
     pool,
-    testConnection
+    testConnection,
+    createTrigger
 };

@@ -28,7 +28,7 @@ const initDatabasefunc = async () => {
       
       await client.query(schemaSql);
       
-      console.log('Database initialized successfully');
+      console.log('function initialized successfully');
       client.release();
   } catch (err) {
       console.error('Error initializing database:', err);
